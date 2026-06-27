@@ -1,12 +1,7 @@
 import pandas as pd
 
-# Old import (remove)
-# from quantforge.portfolio.equal_weight import build_equal_weight_portfolio
-
 # New import
-from quantforge.portfolio.inverse_volatility import (
-    build_inverse_volatility_portfolio
-)
+from quantforge.portfolio.allocator import build_portfolio
 
 from quantforge.backtest.simulator import simulate
 from quantforge.backtest.metrics import evaluate
@@ -16,9 +11,10 @@ df = pd.read_csv(
 )
 
 # Build portfolio with inverse volatility weighting
-portfolio = build_inverse_volatility_portfolio(
+portfolio = build_portfolio(
     df,
-    score_column="ENSEMBLE_SCORE",     # correct column name
+    method="inverse_volatility",
+    score_column="ENSEMBLE_SCORE",
     volatility_column="VOL_20D",
     top_n=10
 )
