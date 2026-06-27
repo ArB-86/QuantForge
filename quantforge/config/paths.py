@@ -1,60 +1,34 @@
-"""
-Centralized filesystem paths for QuantForge.
-"""
-
 from pathlib import Path
 
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[2]
 
-DATA = PROJECT_ROOT / "data"
-
-TRAINING_DATA = DATA / "training"
+DATA = ROOT.parent / "data"
 
 CHECKPOINTS = DATA / "checkpoints"
 
-MODELS = PROJECT_ROOT / "models"
+TRAINING = DATA / "training"
 
-RESULTS = PROJECT_ROOT / "results"
+MODELS = ROOT.parent / "models"
 
-CONFIGS = PROJECT_ROOT / "configs"
-
-
-MASTER_DATASET = (
-    TRAINING_DATA /
-    "master_v9.csv"
-)
+RESULTS = ROOT.parent / "results"
 
 
-REGRESSION_CHECKPOINT = (
-    CHECKPOINTS /
-    "monthly_walkforward_regression_v15.csv"
-)
+def checkpoint(name):
+
+    return CHECKPOINTS / name
 
 
-ENSEMBLE_CHECKPOINT = (
-    CHECKPOINTS /
-    "monthly_walkforward_ensemble_v2.csv"
-)
+def training(name):
+
+    return TRAINING / name
 
 
-LIGHTGBM_MODEL = (
-    MODELS /
-    "monthly_lightgbm_regressor_v15.pkl"
-)
+def model(name):
+
+    return MODELS / name
 
 
-CHECKPOINTS.mkdir(
-    parents=True,
-    exist_ok=True,
-)
+def result(name):
 
-MODELS.mkdir(
-    parents=True,
-    exist_ok=True,
-)
-
-RESULTS.mkdir(
-    parents=True,
-    exist_ok=True,
-)
+    return RESULTS / name
