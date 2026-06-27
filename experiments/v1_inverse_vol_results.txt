@@ -1,0 +1,13 @@
+Model: Ensemble
+
+Portfolio: Inverse Volatility
+
+Final Equity: 524.7310
+
+Sharpe: 2.3547
+
+Volatility: 0.4073
+
+MaxDD: -0.3158
+
+WinRate: 0.6354

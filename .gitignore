@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Data
+data/
+!data/tickers.csv
+
+# Models
+models/
+*.pkl
+*.joblib
+
+# Logs
+logs/
+*.log
+
+# Secrets
+*.env
+*.key
+*.pem
+
+# Jupyter
+.ipynb_checkpoints/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temp
+*.tmp
+*.bak
+results/
+*.csv
