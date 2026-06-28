@@ -1,6 +1,8 @@
 from pathlib import Path
 import pandas as pd
 
+from quantforge.features.registry import get_features
+
 
 class DatasetBuilder:
     """
@@ -23,7 +25,12 @@ class DatasetBuilder:
     ):
 
         self.data_path = Path(data_path)
-        self.features = features
+        
+        if isinstance(features, str):
+            self.features = get_features(features)
+        else:
+            self.features = features
+        
         self.target = target
 
     def load(self):

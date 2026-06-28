@@ -1,31 +1,53 @@
 {
-    "name":"LightGBM Regression",
+    "name": "LightGBM Regression",
 
-    "model":"lightgbm",
+    "model": "lightgbm",
 
-    "target":"TARGET_20D_RETURN",
+    "target": "TARGET_20D_RETURN",
 
-    "top_n":15,
+    "data_path": "data/training/master_v9.csv",
 
-    "holding_days":20,
+    "checkpoint_file": "data/checkpoints/monthly_walkforward_regression_v17.csv",
 
-    "transaction_cost":0.003,
+    "model_file": "models/monthly_lightgbm_regressor_v17.pkl",
 
-    "feature_store":"v3",
+    "prediction_file": "data/checkpoints/monthly_walkforward_regression_v17.csv",
 
-    "seed":42,
+    "feature_store": "v3",
 
-    "n_estimators":500,
+    "top_n": 15,
 
-    "learning_rate":0.03,
+    "holding_days": 20,
 
-    "num_leaves":64,
+    "transaction_cost": 0.003,
 
-    "subsample":0.8,
+    "seed": 42,
 
-    "colsample_bytree":0.8,
+    "n_estimators": 500,
 
-    "random_state":42,
+    "learning_rate": 0.03,
 
-    "n_jobs":-1
+    "num_leaves": 64,
+
+    "max_depth": 5,
+
+    "subsample": 0.8,
+
+    "subsample_freq": 1,
+
+    "colsample_bytree": 0.8,
+
+    "min_child_samples": 20,
+
+    "reg_alpha": 0.0,
+
+    "reg_lambda": 0.0,
+
+    "random_state": 42,
+
+    "device": "gpu",
+
+    "n_jobs": -1,
+
+    "features": []
 }
