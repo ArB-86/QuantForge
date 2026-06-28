@@ -1,0 +1,17 @@
+{
+    "name":"LightGBM Baseline",
+
+    "model":"lightgbm",
+
+    "target":"TARGET_20D_RETURN",
+
+    "top_n":20,
+
+    "holding_days":20,
+
+    "transaction_cost":0.002,
+
+    "feature_store":"v3",
+
+    "seed":42
+}

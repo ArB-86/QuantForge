@@ -1,0 +1,17 @@
+{
+    "name":"LightGBM Regressor",
+
+    "model":"catboost",
+
+    "target":"TARGET_20D_RETURN",
+
+    "top_n":15,
+
+    "holding_days":20,
+
+    "transaction_cost":0.003,
+
+    "feature_store":"v3",
+
+    "seed":42
+}
