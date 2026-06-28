@@ -1,41 +1,41 @@
-# File: backtesting/monthly_walkforward_ranker_v2.py
+# File: backtesting/monthly_walkforward_regression_v15.py
 
 import os
 import pandas as pd
 import joblib
+from pathlib import Path
 
-from lightgbm import LGBMRanker
+from lightgbm import LGBMRegressor
 
 # =====================
-# PATHS (updated for ranker v2)
+# PATHS
 # =====================
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+
+DATA_ROOT = PROJECT_ROOT.parent / "data"
 
 CHECKPOINT_FILE = (
-    "data/checkpoints/"
-    "monthly_walkforward_ranker_v2.csv"
+    DATA_ROOT
+    / "checkpoints"
+    / "monthly_walkforward_regression_v17.csv"
 )
 
 MODEL_FILE = (
-    "models/monthly_lightgbm_ranker_v2.pkl"
+    PROJECT_ROOT.parent
+    / "models"
+    / "monthly_lightgbm_regressor_v17.pkl"
 )
 
-os.makedirs("data/checkpoints", exist_ok=True)
-os.makedirs("models", exist_ok=True)
+CHECKPOINT_FILE.parent.mkdir(
+    parents=True,
+    exist_ok=True,
+)
 
-# =====================
-# CLEAN OLD ARTIFACTS (safe to run even if files don't exist)
-# =====================
-
-for p in [
-    CHECKPOINT_FILE,
-    MODEL_FILE,
-]:
-    try:
-        if os.path.exists(p):
-            os.remove(p)
-    except Exception:
-        # ignore removal errors
-        pass
+MODEL_FILE.parent.mkdir(
+    parents=True,
+    exist_ok=True,
+)
 
 # =====================
 # LOAD DATA
@@ -43,7 +43,9 @@ for p in [
 
 print("Loading dataset...")
 
-df = pd.read_csv("data/training/master_v9.csv")
+df = pd.read_csv(
+    DATA_ROOT / "training" / "master_v9.csv"
+)
 
 df["Date"] = pd.to_datetime(df["Date"])
 
@@ -71,14 +73,93 @@ trading_dates = sorted(df["Date"].unique())
 # =====================
 
 FEATURES = [
-    "EMA20", "EMA50", "EMA200", "RSI14", "MACD", "MACD_SIGNAL", "MACD_HIST",
-    "ATR14", "BB_UPPER", "BB_LOWER", "VWAP", "RETURN_1D", "RETURN_5D",
-    "LOG_RETURN", "RSI14_RANK", "RETURN_5D_RANK", "Volume_RANK", "ATR14_RANK",
-    "VOL_20D", "BULL_REGIME", "HIGH_VOL_REGIME", "RETURN_20D", "RETURN_60D",
-    "RETURN_120D", "RETURN_20D_RANK", "RETURN_60D_RANK", "RETURN_120D_RANK",
-    "ATR_PCT", "EMA20_OVER_EMA200", "VOLUME_RATIO_20D", "RETURN_250D",
-    "RETURN_250D_RANK", "RETURN_20D_MINUS_5D", "RETURN_120D_MINUS_20D",
-    "PRICE_TO_52W_HIGH"
+
+    # =====================
+    # PRICE MOMENTUM
+    # =====================
+
+    "RETURN_1D",
+    "RETURN_5D",
+    "RETURN_20D",
+    "RETURN_60D",
+    "RETURN_120D",
+    "RETURN_250D",
+    "LOG_RETURN",
+
+    # =====================
+    # CROSS-SECTIONAL RANKS
+    # =====================
+
+    "RETURN_5D_RANK",
+    "RETURN_20D_RANK",
+    "RETURN_60D_RANK",
+    "RETURN_120D_RANK",
+    "RETURN_250D_RANK",
+
+    "Volume_RANK",
+    "ATR14_RANK",
+    "SIZE_RANK",
+
+    # =====================
+    # VOLATILITY
+    # =====================
+
+    "VOL_20D",
+    "ATR14",
+    "ATR_PCT",
+
+    # =====================
+    # TREND
+    # =====================
+
+    "EMA20",
+    "EMA50",
+    "EMA200",
+    "EMA20_OVER_EMA200",
+
+    # =====================
+    # MOMENTUM INDICATORS
+    # =====================
+
+    "RSI14",
+    "RSI14_RANK",
+
+    "MACD",
+    "MACD_SIGNAL",
+    "MACD_HIST",
+
+    # =====================
+    # VOLUME
+    # =====================
+
+    "Volume",
+    "DOLLAR_VOLUME",
+    "LOG_DOLLAR_VOLUME",
+    "VOLUME_RATIO_20D",
+
+    # =====================
+    # PRICE LOCATION
+    # =====================
+
+    "PRICE_TO_52W_HIGH",
+
+    "BB_UPPER",
+    "BB_LOWER",
+
+    "VWAP",
+
+    # =====================
+    # MARKET CONTEXT
+    # =====================
+
+    "MARKET_RET_20D",
+
+    "RETURN_20D_MINUS_5D",
+    "RETURN_120D_MINUS_20D",
+
+    "BULL_REGIME",
+    "HIGH_VOL_REGIME"
+
 ]
 
 TARGET = "TARGET_5D_RETURN"
@@ -102,7 +183,7 @@ print("Dataset Shape:", df.shape)
 
 completed_months = set()
 
-if os.path.exists(CHECKPOINT_FILE):
+if CHECKPOINT_FILE.exists():
     old = pd.read_csv(CHECKPOINT_FILE, usecols=["Date"])
     old["Date"] = pd.to_datetime(old["Date"])
     completed_months = set(
@@ -162,40 +243,15 @@ for i in range(36, len(months) - 1):
         continue
 
     # =====================
-    # BUILD RANK LABELS
-    # =====================
-
-    train = train.copy()
-
-    train["RANK_LABEL"] = (
-        train
-        .groupby("Date")[TARGET]
-        .transform(
-            lambda x: pd.qcut(
-                x,
-                q=5,
-                labels=False,
-                duplicates="drop"
-            )
-        )
-    )
-
-    train["RANK_LABEL"] = (
-        train["RANK_LABEL"]
-        .fillna(2)
-        .astype(int)
-    )
-
-    # =====================
-    # TRAIN/VALID SPLIT (kept for logging / potential validation)
+    # TRAIN/VALID SPLIT
     # =====================
 
     split = int(len(train) * 0.9)
     train_part = train.iloc[:split]
     valid_part = train.iloc[split:]
 
-    X_train_part = train_part[FEATURES]
-    y_train_part = train_part[TARGET]
+    X_train = train_part[FEATURES]
+    y_train = train_part[TARGET]
 
     X_valid = valid_part[FEATURES]
     y_valid = valid_part[TARGET]
@@ -219,13 +275,13 @@ for i in range(36, len(months) - 1):
     )
 
     # =====================
-    # FINAL MODEL (Lambdarank for ranking)
+    # FINAL MODEL (fixed hyperparameters from Optuna)
     # =====================
 
-    model = LGBMRanker(
-        objective="lambdarank",
-        metric="ndcg",
+    model = LGBMRegressor(
         device="gpu",
+        objective="regression",
+        metric="rmse",
         n_estimators=500,
         max_bin=127,
         force_col_wise=True,
@@ -244,27 +300,9 @@ for i in range(36, len(months) - 1):
         reg_lambda=2.601246673004912
     )
 
-    # =====================
-    # GROUPS: each trading day is a group (for the entire training set)
-    # =====================
-
-    group_train = (
-        train
-        .groupby("Date")
-        .size()
-        .tolist()
-    )
-
-    # Fit with group information using rank labels
-    model.fit(
-        train[FEATURES],
-        train["RANK_LABEL"],
-        group=group_train
-    )
-
+    model.fit(train[FEATURES], train[TARGET])
     print("Fit Complete")
 
-    # Prediction (same as regression)
     pred_return = model.predict(X_test)
     print("Prediction Complete")
 
@@ -274,7 +312,7 @@ for i in range(36, len(months) - 1):
     temp.to_csv(
         CHECKPOINT_FILE,
         mode="a",
-        header=not os.path.exists(CHECKPOINT_FILE),
+        header=not CHECKPOINT_FILE.exists(),
         index=False
     )
 
@@ -285,8 +323,7 @@ for i in range(36, len(months) - 1):
 # =====================
 
 if model is not None:
-    # LGBMRanker is a LightGBM model; saving with joblib is fine (.pkl)
     joblib.dump(model, MODEL_FILE)
     print("\nModel Saved.")
 
-print("\nMonthly Walkforward Ranker Complete.")
+print("\nMonthly Walkforward Regression Complete.")
