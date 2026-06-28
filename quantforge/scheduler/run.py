@@ -1,20 +1,19 @@
-import subprocess
 from pathlib import Path
+import subprocess
 
-jobs = [
-    j.strip()
-    for j in Path(
-        "queue/jobs.txt"
-    ).read_text().splitlines()
-    if j.strip()
-]
+jobs = Path(
+    "queue/jobs.txt"
+).read_text().splitlines()
 
 for job in jobs:
 
-    print()
+    job = job.strip()
+
+    if not job:
+        continue
 
     print("="*80)
-    print("RUNNING", job)
+    print(job)
     print("="*80)
 
     subprocess.run(

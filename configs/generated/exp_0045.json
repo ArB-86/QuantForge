@@ -1,0 +1,16 @@
+{
+    "name": "EXP_0045",
+    "model": "lightgbm",
+    "target": "TARGET_20D_RETURN",
+    "learning_rate": 0.03,
+    "num_leaves": 64,
+    "n_estimators": 500,
+    "subsample": 0.8,
+    "colsample_bytree": 0.8,
+    "random_state": 42,
+    "n_jobs": -1,
+    "top_n": 20,
+    "holding_days": 20,
+    "transaction_cost": 0.003,
+    "feature_store": "v3"
+}
