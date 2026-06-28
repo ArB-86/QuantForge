@@ -1,15 +1,24 @@
-import subprocess
+from quantforge.training.walkforward import WalkForwardTrainer
 
-def train():
 
-    print("="*60)
+def train(config):
+    """
+    Run the walk-forward training pipeline.
+
+    Parameters
+    ----------
+    config : dict
+        Configuration dictionary.
+
+    Returns
+    -------
+    CheckpointManager
+    """
+
+    print("=" * 80)
     print("TRAINING")
-    print("="*60)
+    print("=" * 80)
 
-    subprocess.run(
-        [
-            "python",
-            "backtesting/monthly_walkforward_regression_v15.py"
-        ],
-        check=True
-    )
+    trainer = WalkForwardTrainer(config)
+
+    return trainer.run()

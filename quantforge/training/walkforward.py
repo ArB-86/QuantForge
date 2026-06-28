@@ -1,4 +1,8 @@
-from quantforge.training.walkforward_legacy import run_walkforward
+from quantforge.training.dataset_builder import DatasetBuilder
+from quantforge.training.model_manager import ModelManager
+from quantforge.training.checkpoint_manager import CheckpointManager
+from quantforge.training.monthly_loop import MonthlyLoop
+
 
 class WalkForwardTrainer:
 
@@ -8,4 +12,51 @@ class WalkForwardTrainer:
 
     def run(self):
 
-        return run_walkforward(self.config)
+        builder = DatasetBuilder(
+
+            self.config["data_path"],
+
+            self.config["features"],
+
+            self.config["target"],
+
+        )
+
+        df = builder.prepare()
+
+        checkpoint = CheckpointManager(
+
+            self.config["checkpoint_file"],
+
+            self.config["model_file"],
+
+        )
+
+        model_manager = ModelManager(
+
+            self.config
+
+        )
+
+        loop = MonthlyLoop(
+
+            df=df,
+
+            features=self.config["features"],
+
+            target=self.config["target"],
+
+            model_manager=model_manager,
+
+            checkpoint_manager=checkpoint,
+
+            purge_days=self.config.get(
+                "purge_days",
+                5
+            ),
+
+        )
+
+        loop.run()
+
+        return checkpoint

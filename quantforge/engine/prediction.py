@@ -1,15 +1,21 @@
-import subprocess
+from quantforge.analysis.prediction_engine import PredictionEngine
 
-def prediction():
 
-    print("="*60)
-    print("PREDICTION ANALYSIS")
-    print("="*60)
+def prediction(predictions):
+    """
+    Run prediction analysis.
 
-    subprocess.run(
-        [
-            "python",
-            "analysis/prediction_analysis.py"
-        ],
-        check=True
-    )
+    Parameters
+    ----------
+    predictions : pandas.DataFrame
+
+    Returns
+    -------
+    PredictionEngine
+    """
+
+    print("=" * 80)
+    print("PREDICTION")
+    print("=" * 80)
+
+    return PredictionEngine(predictions)
