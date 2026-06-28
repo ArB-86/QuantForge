@@ -1,69 +1,25 @@
-
-import json
-from pathlib import Path
-import pandas as pd
+from quantforge.database.experiments import ExperimentDB
 
 
 class Leaderboard:
 
-    def __init__(
+    def __init__(self):
+
+        self.db = ExperimentDB()
+
+    def top(
         self,
-        folder="results"
+        n=20,
     ):
 
-        self.folder = Path(folder)
+        return self.db.top(n)
 
-    def load(self):
+    def champion(self):
 
-        rows = []
+        rows = self.db.top(1)
 
-        for f in self.folder.glob("*.json"):
+        if len(rows):
 
-            with open(f) as fp:
+            return rows[0]
 
-                rows.append(
-                    json.load(fp)
-                )
-
-        if len(rows) == 0:
-
-            return pd.DataFrame()
-
-        return (
-            pd.DataFrame(rows)
-            .sort_values(
-                "sharpe",
-                ascending=False
-            )
-            .reset_index(
-                drop=True
-            )
-        )
-
-
-if __name__ == "__main__":
-
-    lb = Leaderboard()
-
-    df = lb.load()
-
-    if len(df):
-
-        print()
-
-        print(
-            df[
-                [
-                    "name",
-                    "model",
-                    "sharpe",
-                    "cagr",
-                    "max_drawdown",
-                    "win_rate"
-                ]
-            ]
-        )
-
-    else:
-
-        print("No experiments found.")
+        return None
