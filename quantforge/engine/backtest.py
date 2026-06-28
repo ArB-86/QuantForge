@@ -1,15 +1,23 @@
-import subprocess
+from quantforge.backtest.backtest_engine import BacktestEngine
 
-def backtest():
 
-    print("="*60)
+def backtest(config):
+    """
+    Run portfolio backtest.
+
+    Parameters
+    ----------
+    config : dict
+
+    Returns
+    -------
+    (portfolio, metrics)
+    """
+
+    print("=" * 80)
     print("BACKTEST")
-    print("="*60)
+    print("=" * 80)
 
-    subprocess.run(
-        [
-            "python",
-            "backtesting/portfolio_backtest_v15.py"
-        ],
-        check=True
-    )
+    engine = BacktestEngine(config)
+
+    return engine.run()

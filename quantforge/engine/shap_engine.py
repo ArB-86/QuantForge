@@ -1,15 +1,10 @@
-import subprocess
+from quantforge.analysis.shap_engine import SHAPEngine
 
-def shap():
 
-    print("="*60)
+def shap(shap_df):
+
+    print("=" * 80)
     print("SHAP")
-    print("="*60)
+    print("=" * 80)
 
-    subprocess.run(
-        [
-            "python",
-            "analysis/shap_walkforward.py"
-        ],
-        check=True
-    )
+    return SHAPEngine(shap_df)

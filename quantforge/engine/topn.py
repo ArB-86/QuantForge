@@ -1,15 +1,10 @@
-import subprocess
+from quantforge.analysis.topn_engine import TopNEngine
 
-def topn():
 
-    print("="*60)
-    print("TOP-N SWEEP")
-    print("="*60)
+def topn(predictions):
 
-    subprocess.run(
-        [
-            "python",
-            "analysis/topn_sweep.py"
-        ],
-        check=True
-    )
+    print("=" * 80)
+    print("TOP-N")
+    print("=" * 80)
+
+    return TopNEngine(predictions)
