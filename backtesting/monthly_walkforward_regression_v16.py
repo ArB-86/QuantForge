@@ -1,11 +1,3 @@
-import sys
-from pathlib import Path
-
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT))
-
 # File: backtesting/monthly_walkforward_regression_v15.py
 
 import os
@@ -14,9 +6,6 @@ import joblib
 from pathlib import Path
 
 from lightgbm import LGBMRegressor
-
-from quantforge.features.store import FeatureStore
-from quantforge.features.selector import get_training_features
 
 # =====================
 # PATHS
@@ -29,13 +18,13 @@ DATA_ROOT = PROJECT_ROOT.parent / "data"
 CHECKPOINT_FILE = (
     DATA_ROOT
     / "checkpoints"
-    / "monthly_walkforward_regression_v15.csv"
+    / "monthly_walkforward_regression_v16.csv"
 )
 
 MODEL_FILE = (
     PROJECT_ROOT.parent
     / "models"
-    / "monthly_lightgbm_regressor_v15.pkl"
+    / "monthly_lightgbm_regressor_v16.pkl"
 )
 
 CHECKPOINT_FILE.parent.mkdir(
@@ -66,18 +55,6 @@ df = (
 )
 
 # =====================
-# FEATURE STORE
-# =====================
-
-store = FeatureStore()
-df = store.build(df)
-
-FEATURES = get_training_features(df)
-
-print()
-print("Features:", len(FEATURES))
-
-# =====================
 # TUNE FLAG
 # =====================
 
@@ -92,10 +69,100 @@ PURGE_DAYS = 5
 trading_dates = sorted(df["Date"].unique())
 
 # =====================
-# TARGET
+# FEATURES
 # =====================
 
-TARGET = "TARGET_20D_RETURN"
+FEATURES = [
+
+    # =====================
+    # PRICE MOMENTUM
+    # =====================
+
+    "RETURN_1D",
+    "RETURN_5D",
+    "RETURN_20D",
+    "RETURN_60D",
+    "RETURN_120D",
+    "RETURN_250D",
+    "LOG_RETURN",
+
+    # =====================
+    # CROSS-SECTIONAL RANKS
+    # =====================
+
+    "RETURN_5D_RANK",
+    "RETURN_20D_RANK",
+    "RETURN_60D_RANK",
+    "RETURN_120D_RANK",
+    "RETURN_250D_RANK",
+
+    "Volume_RANK",
+    "ATR14_RANK",
+    "SIZE_RANK",
+
+    # =====================
+    # VOLATILITY
+    # =====================
+
+    "VOL_20D",
+    "ATR14",
+    "ATR_PCT",
+
+    # =====================
+    # TREND
+    # =====================
+
+    "EMA20",
+    "EMA50",
+    "EMA200",
+    "EMA20_OVER_EMA200",
+
+    # =====================
+    # MOMENTUM INDICATORS
+    # =====================
+
+    "RSI14",
+    "RSI14_RANK",
+
+    "MACD",
+    "MACD_SIGNAL",
+    "MACD_HIST",
+
+    # =====================
+    # VOLUME
+    # =====================
+
+    "Volume",
+    "DOLLAR_VOLUME",
+    "LOG_DOLLAR_VOLUME",
+    "VOLUME_RATIO_20D",
+
+    # =====================
+    # PRICE LOCATION
+    # =====================
+
+    "PRICE_TO_52W_HIGH",
+
+    "BB_UPPER",
+    "BB_LOWER",
+
+    "VWAP",
+
+    # =====================
+    # MARKET CONTEXT
+    # =====================
+
+    "MARKET_RET_20D",
+
+    "RETURN_20D_MINUS_5D",
+    "RETURN_120D_MINUS_20D",
+
+    "BULL_REGIME",
+    "HIGH_VOL_REGIME"
+
+]
+
+TARGET = "TARGET_10D_RETURN"
 
 df = df.dropna(subset=FEATURES + [TARGET])
 

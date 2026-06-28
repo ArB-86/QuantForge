@@ -1,7 +1,3 @@
-import os
-from pathlib import Path
-OUT = Path(os.environ["QF_EXPERIMENT_DIR"])
-OUT.mkdir(parents=True, exist_ok=True)
 import pandas as pd
 import numpy as np
 from pathlib import Path
@@ -29,7 +25,7 @@ ROUND_TRIP_COST = 0.002
 df = pd.read_csv(
     DATA_ROOT
     / "checkpoints"
-    / "monthly_walkforward_regression_v15.csv"
+    / "monthly_walkforward_ensemble_v3.csv"
 )
 
 df["Date"] = pd.to_datetime(
@@ -71,7 +67,7 @@ for i in range(
     picks = (
         group
         .sort_values(
-            "PRED_RETURN",
+            "ENSEMBLE_SCORE",
             ascending=False
         )
         .head(TOP_N)
@@ -142,7 +138,7 @@ portfolio["Equity"] = (
 ).cumprod()
 
 portfolio.to_csv(
-    OUT / "portfolio.csv",
+    "data/checkpoints/portfolio_results_regression_v14.csv",
     index=False
 )
 
@@ -262,23 +258,3 @@ print(
     ),
     "%"
 )
-import json
-
-metrics = {
-    "Sharpe": float(sharpe),
-    "CAGR": float(cagr),
-    "MaxDD": float(max_dd),
-    "WinRate": float(win_rate),
-    "FinalEquity": float(portfolio["Equity"].iloc[-1])
-}
-
-with open(
-    OUT / "metrics.json",
-    "w"
-) as fp:
-
-    json.dump(
-        metrics,
-        fp,
-        indent=4
-    )
