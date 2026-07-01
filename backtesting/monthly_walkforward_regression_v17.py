@@ -1,4 +1,4 @@
-# File: backtesting/monthly_walkforward_regression_v15.py
+# File: backtesting/monthly_walkforward_regression_v17.py
 
 import os
 import pandas as pd
@@ -162,7 +162,7 @@ FEATURES = [
 
 ]
 
-TARGET = "TARGET_5D_RETURN"
+TARGET = "TARGET_20D_RETURN"
 
 df = df.dropna(subset=FEATURES + [TARGET])
 

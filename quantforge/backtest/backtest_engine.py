@@ -2,10 +2,11 @@ from pathlib import Path
 
 import pandas as pd
 
-from quantforge.portfolio.equal_weight import (
-    build_equal_weight_portfolio,
+from quantforge.portfolio.allocator import (
+    build_portfolio,
 )
 
+from quantforge.backtest.simulator import simulate
 from quantforge.backtest.metrics import evaluate
 
 
@@ -33,9 +34,14 @@ class BacktestEngine:
 
         predictions = self.load_predictions()
 
-        portfolio = build_equal_weight_portfolio(
+        portfolio = build_portfolio(
 
             predictions,
+
+            method=self.config.get(
+                "portfolio",
+                "equal_weight",
+            ),
 
             score_column=self.config.get(
                 "score_column",
@@ -46,13 +52,28 @@ class BacktestEngine:
 
         )
 
+        print("=" * 80)
+        print("Portfolio Method:", self.config["portfolio"])
+        print(portfolio[["Date", "Ticker", "Weight"]].head(20))
+        print("=" * 80)
+
+        portfolio = simulate(
+
+            portfolio,
+
+            return_column=self.config["target"],
+
+            holding_days=self.config["holding_days"],
+
+            round_trip_cost=self.config["transaction_cost"],
+
+        )
+
         metrics = evaluate(
 
             portfolio,
 
-            holding_days=self.config[
-                "holding_days"
-            ],
+            holding_days=self.config["holding_days"],
 
         )
 

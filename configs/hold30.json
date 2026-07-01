@@ -5,7 +5,7 @@
 
     "target": "TARGET_20D_RETURN",
 
-    "data_path": "../data/training/master_v9.parquet",
+    "data_path": "../data/training/master_v9.csv",
 
     "checkpoint_file": "../data/checkpoints/monthly_walkforward_regression_v17.csv",
 
@@ -19,7 +19,7 @@
 
     "portfolio": "equal_weight",
 
-    "holding_days": 20,
+    "holding_days": 30,
 
     "transaction_cost": 0.003,
 

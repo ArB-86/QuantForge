@@ -2,17 +2,19 @@ import numpy as np
 import pandas as pd
 
 
-def build_inverse_volatility_portfolio(
+def build_score_weight_portfolio(
     df,
     score_column="PRED_RETURN",
-    volatility_column="VOL_20D",
     top_n=10,
     max_weight=0.20,
     min_weight=0.02,
 ):
     """
-    Build inverse-volatility weighted portfolio
-    independently for each rebalance date.
+    Score-weighted portfolio.
+
+    Higher prediction
+        =>
+    Higher allocation.
     """
 
     portfolios = []
@@ -29,12 +31,24 @@ def build_inverse_volatility_portfolio(
             .copy()
         )
 
-        inv_vol = 1.0 / (
-            picks[volatility_column]
-            .clip(lower=1e-6)
+        scores = (
+            picks[score_column]
+            .clip(lower=0)
         )
 
-        weights = inv_vol / inv_vol.sum()
+        if scores.sum() == 0:
+
+            weights = np.repeat(
+                1 / len(picks),
+                len(picks),
+            )
+
+        else:
+
+            weights = (
+                scores
+                / scores.sum()
+            )
 
         weights = np.clip(
             weights,
@@ -46,7 +60,9 @@ def build_inverse_volatility_portfolio(
 
         picks["Weight"] = weights
 
-        portfolios.append(picks)
+        portfolios.append(
+            picks
+        )
 
     return pd.concat(
         portfolios,
