@@ -6,9 +6,9 @@ from quantforge.risk.transaction_cost import apply_transaction_cost
 
 def simulate(
     portfolio_df,
-    return_column="TARGET_5D_RETURN",
-    holding_days=5,
-    round_trip_cost=0.002,
+    return_column,
+    holding_days,
+    round_trip_cost,
 ):
 
     portfolio_df = portfolio_df.copy()

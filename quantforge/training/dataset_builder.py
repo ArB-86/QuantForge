@@ -1,3 +1,4 @@
+import time
 from pathlib import Path
 import pandas as pd
 
@@ -10,7 +11,7 @@ class DatasetBuilder:
 
     Responsibilities
     ----------------
-    - Load CSV
+    - Load CSV or Parquet
     - Parse dates
     - Sort rows
     - Drop NA
@@ -39,7 +40,25 @@ class DatasetBuilder:
         print("LOADING DATASET")
         print("=" * 80)
 
-        df = pd.read_csv(self.data_path)
+        t0 = time.perf_counter()
+
+        if self.data_path.suffix == ".parquet":
+
+            df = pd.read_parquet(
+                self.data_path
+            )
+
+        else:
+
+            df = pd.read_csv(
+                self.data_path
+            )
+
+        print()
+
+        print(
+            f"Dataset loaded in {time.perf_counter()-t0:.2f} seconds"
+        )
 
         df["Date"] = pd.to_datetime(df["Date"])
 

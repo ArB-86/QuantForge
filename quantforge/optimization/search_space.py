@@ -1,43 +1,43 @@
 SEARCH_SPACE = {
 
     "learning_rate": (
-        0.005,
-        0.05,
+        0.02,
+        0.04,
     ),
 
     "num_leaves": (
-        31,
-        255,
+        48,
+        96,
     ),
 
     "max_depth": (
-        3,
-        12,
+        4,
+        7,
     ),
 
     "subsample": (
-        0.60,
-        1.00,
+        0.75,
+        0.90,
     ),
 
     "colsample_bytree": (
-        0.60,
-        1.00,
+        0.75,
+        0.90,
     ),
 
     "min_child_samples": (
-        20,
-        200,
+        10,
+        60,
     ),
 
     "reg_alpha": (
         0.0,
-        5.0,
+        1.0,
     ),
 
     "reg_lambda": (
         0.0,
-        5.0,
+        1.0,
     ),
 
 }

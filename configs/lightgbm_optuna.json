@@ -17,7 +17,9 @@
 
     "top_n": 15,
 
-    "portfolio": "equal_weight",
+    "optuna_trials": 50,
+
+    "portfolio": "score_weight",
 
     "holding_days": 20,
 

@@ -6,36 +6,41 @@ from quantforge.portfolio.inverse_volatility import (
     build_inverse_volatility_portfolio,
 )
 
+from quantforge.portfolio.score_weight import (
+    build_score_weight_portfolio,
+)
+
+ALLOCATORS = {
+
+    "equal_weight":
+        build_equal_weight_portfolio,
+
+    "inverse_volatility":
+        build_inverse_volatility_portfolio,
+
+    "score_weight":
+        build_score_weight_portfolio,
+
+}
+
 
 def build_portfolio(
     df,
-    method="inverse_volatility",
+    method="equal_weight",
     **kwargs,
 ):
-    """
-    Unified portfolio construction interface.
 
-    Parameters
-    ----------
-    method : str
-        equal_weight
-        inverse_volatility
-    """
+    try:
 
-    method = method.lower()
-
-    if method == "equal_weight":
-        return build_equal_weight_portfolio(
+        return ALLOCATORS[
+            method.lower()
+        ](
             df,
             **kwargs,
         )
 
-    if method == "inverse_volatility":
-        return build_inverse_volatility_portfolio(
-            df,
-            **kwargs,
-        )
+    except KeyError:
 
-    raise ValueError(
-        f"Unknown portfolio method: {method}"
-    )
+        raise ValueError(
+            f"Unknown portfolio method: {method}"
+        )

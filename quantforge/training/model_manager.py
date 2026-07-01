@@ -1,5 +1,9 @@
 from lightgbm import LGBMRegressor
 
+from quantforge.utils.system import (
+    get_num_threads,
+)
+
 
 class ModelManager:
 
@@ -39,5 +43,5 @@ class ModelManager:
             force_col_wise=True,
             max_bin=127,
             verbose=-1,
-            n_jobs=8,
+            n_jobs=get_num_threads(),
         )

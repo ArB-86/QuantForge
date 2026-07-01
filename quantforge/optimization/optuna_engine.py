@@ -1,4 +1,6 @@
 import copy
+from pathlib import Path
+import os
 
 import optuna
 
@@ -31,6 +33,36 @@ class OptunaEngine:
         cfg = copy.deepcopy(
             self.base_config
         )
+
+        trial_id = trial.number
+
+        checkpoint = Path(
+            cfg["checkpoint_file"]
+        )
+
+        model = Path(
+            cfg["model_file"]
+        )
+
+        prediction = Path(
+            cfg["prediction_file"]
+        )
+
+        checkpoint = checkpoint.with_name(
+            checkpoint.stem + f"_trial_{trial_id}" + checkpoint.suffix
+        )
+
+        model = model.with_name(
+            model.stem + f"_trial_{trial_id}" + model.suffix
+        )
+
+        prediction = prediction.with_name(
+            prediction.stem + f"_trial_{trial_id}" + prediction.suffix
+        )
+
+        cfg["checkpoint_file"] = str(checkpoint)
+        cfg["model_file"] = str(model)
+        cfg["prediction_file"] = str(prediction)
 
         cfg["learning_rate"] = trial.suggest_float(
             "learning_rate",
@@ -73,7 +105,38 @@ class OptunaEngine:
             *SEARCH_SPACE["reg_lambda"],
         )
 
+        print("=" * 80)
+        print("TRIAL", trial.number)
+        print("Checkpoint:", cfg["checkpoint_file"])
+        print("Prediction:", cfg["prediction_file"])
+        print("Model:", cfg["model_file"])
+        print("=" * 80)
+
         metrics = self.runner(cfg)
+
+        #
+        # Soft penalty instead of hard rejection
+        #
+
+        if not metrics["Valid"]:
+
+            return (
+
+                metrics.get(
+                    "Sharpe",
+                    0,
+                )
+
+                - 100
+
+                - abs(
+                    metrics.get(
+                        "Max Drawdown",
+                        1,
+                    )
+                )
+
+            )
 
         return portfolio_objective(
             metrics
@@ -81,16 +144,39 @@ class OptunaEngine:
 
     def optimize(
         self,
-        n_trials=50,
+        n_trials=100,
     ):
 
         study = optuna.create_study(
+
+            study_name="QuantForge",
+
             direction="maximize",
+
         )
 
         study.optimize(
+
             self.objective,
+
             n_trials=n_trials,
+
+            show_progress_bar=True,
+
         )
+
+        print()
+
+        print("=" * 80)
+
+        print("BEST SCORE")
+
+        print(study.best_value)
+
+        print()
+
+        print("BEST PARAMS")
+
+        print(study.best_params)
 
         return study
