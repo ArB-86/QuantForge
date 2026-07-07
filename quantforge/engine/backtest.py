@@ -1,18 +1,14 @@
 from quantforge.backtest.backtest_engine import BacktestEngine
+from quantforge.config.config import Config
 
 
 def backtest(config):
     """
     Run portfolio backtest.
-
-    Parameters
-    ----------
-    config : dict
-
-    Returns
-    -------
-    (portfolio, metrics)
     """
+
+    if isinstance(config, str):
+        config = Config(config).dict()
 
     print("=" * 80)
     print("BACKTEST")

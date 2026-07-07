@@ -42,7 +42,7 @@ class WalkForwardTrainer:
 
             df=df,
 
-            features=self.config["features"],
+            features=builder.features,   # <-- use the resolved list, not config string
 
             target=self.config["target"],
 

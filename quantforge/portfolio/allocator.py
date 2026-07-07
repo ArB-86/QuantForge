@@ -10,6 +10,11 @@ from quantforge.portfolio.score_weight import (
     build_score_weight_portfolio,
 )
 
+from quantforge.portfolio.constraints import (
+    PortfolioConstraints,
+)
+from quantforge.risk.exposure import ExposureManager
+
 ALLOCATORS = {
 
     "equal_weight":
@@ -30,9 +35,15 @@ def build_portfolio(
     **kwargs,
 ):
 
+    # Remove max_stock_weight from kwargs before passing to allocator
+    max_stock_weight = kwargs.pop(
+        "max_stock_weight",
+        1.0,
+    )
+
     try:
 
-        return ALLOCATORS[
+        portfolio = ALLOCATORS[
             method.lower()
         ](
             df,
@@ -44,3 +55,15 @@ def build_portfolio(
         raise ValueError(
             f"Unknown portfolio method: {method}"
         )
+
+    # Apply constraint after portfolio is built
+    portfolio = PortfolioConstraints(
+        max_weight=max_stock_weight,
+    ).apply(portfolio)
+
+    # Apply exposure management (ensure weights sum to 100%)
+    portfolio = ExposureManager().apply(
+        portfolio
+    )
+
+    return portfolio

@@ -1,0 +1,6 @@
+{
+    "script": "portfolio_backtest_v15.py",
+    "TOP_N": 10,
+    "HOLD_DAYS": 20,
+    "ROUND_TRIP_COST": 0.002
+}

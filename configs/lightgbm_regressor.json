@@ -17,7 +17,11 @@
 
     "top_n": 15,
 
-    "portfolio": "equal_weight",
+    "portfolio": "score_weight",
+
+    "max_stock_weight": 0.10,
+
+    "target_volatility": 0.20,
 
     "holding_days": 20,
 

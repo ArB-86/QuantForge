@@ -36,6 +36,11 @@ class ExperimentRunner:
 
         _, metrics = backtest(config)
 
+        print("\nTRIAL METRICS")
+        for k, v in metrics.items():
+            print(k, "=", v)
+        print()
+
         #
         # Validate
         #
@@ -49,37 +54,24 @@ class ExperimentRunner:
             reasons
         )
 
+        score = portfolio_objective(metrics)
+
+        if not valid:
+            score -= 100
+
+        metrics["Score"] = score
+
+        self.logger.log(
+            config,
+            metrics,
+            score,
+        )
+
         if not valid:
 
             print("=" * 80)
             print("EXPERIMENT REJECTED")
             print(metrics["RejectReason"])
             print("=" * 80)
-
-            return metrics
-
-        #
-        # Score
-        #
-
-        score = portfolio_objective(
-            metrics
-        )
-
-        #
-        # Log
-        #
-
-        self.logger.log(
-
-            config,
-
-            metrics,
-
-            score,
-
-        )
-
-        metrics["Score"] = score
 
         return metrics

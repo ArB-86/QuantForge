@@ -23,7 +23,7 @@ engine = OptunaEngine(
 )
 
 study = engine.optimize(
-    n_trials=50,
+    n_trials=1,
 )
 
 print()

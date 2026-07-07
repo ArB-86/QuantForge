@@ -1,4 +1,4 @@
-from quantforge.config.config import Config
+import json
 
 from quantforge.optimization.optuna_engine import (
     OptunaEngine,
@@ -9,34 +9,25 @@ from quantforge.research.runner import (
 )
 
 
-cfg = Config(
-    "configs/lightgbm_optuna.json"
+config = json.load(
+    open(
+        "configs/lightgbm_regressor.json"
+    )
 )
 
 runner = ExperimentRunner()
 
 engine = OptunaEngine(
-
-    cfg.dict(),
-
+    config,
     runner,
-
 )
 
 study = engine.optimize(
-
-    n_trials=20,
-
+    n_trials=50,
 )
 
 print()
-print("=" * 80)
-print("BEST SCORE")
-print("=" * 80)
+
 print(study.best_value)
 
-print()
-print("=" * 80)
-print("BEST PARAMS")
-print("=" * 80)
 print(study.best_params)

@@ -5,6 +5,10 @@ import pandas as pd
 from quantforge.portfolio.allocator import (
     build_portfolio,
 )
+from quantforge.portfolio.constraints import PortfolioConstraints
+from quantforge.portfolio.volatility_target import (
+    VolatilityTarget,
+)
 
 from quantforge.backtest.simulator import simulate
 from quantforge.backtest.metrics import evaluate
@@ -50,6 +54,11 @@ class BacktestEngine:
 
             top_n=self.config["top_n"],
 
+            max_stock_weight=self.config.get(
+                "max_stock_weight",
+                1.0,
+            ),
+
         )
 
         print("=" * 80)
@@ -69,6 +78,21 @@ class BacktestEngine:
 
         )
 
+        # Apply volatility targeting to the portfolio returns
+        portfolio["Return"] = VolatilityTarget(
+            target_vol=self.config.get(
+                "target_volatility",
+                0.20,
+            ),
+        ).apply(
+            portfolio["Return"]
+        )
+
+        # Recalculate equity curve with volatility-targeted returns
+        portfolio["Equity"] = (
+            1 + portfolio["Return"]
+        ).cumprod()
+
         metrics = evaluate(
 
             portfolio,
@@ -76,5 +100,12 @@ class BacktestEngine:
             holding_days=self.config["holding_days"],
 
         )
+
+        print()
+
+        for k, v in metrics.items():
+            print(f"{k} = {v}")
+
+        print()
 
         return portfolio, metrics
