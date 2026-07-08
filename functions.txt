@@ -1,0 +1,43 @@
+quantforge/backtest/engine.py:def run_backtest(
+quantforge/backtest/metrics.py:def evaluate(
+quantforge/backtest/simulator.py:def simulate(
+quantforge/cli/main.py:def main():
+quantforge/config/loader.py:def load(path):
+quantforge/config/paths.py:def checkpoint(name):
+quantforge/config/paths.py:def model(name):
+quantforge/config/paths.py:def result(name):
+quantforge/config/paths.py:def training(name):
+quantforge/config/splitter.py:def split(config):
+quantforge/engine/backtest.py:def backtest(config):
+quantforge/engine/prediction.py:def prediction(predictions):
+quantforge/engine/shap_engine.py:def shap(shap_df):
+quantforge/engine/topn.py:def topn(predictions):
+quantforge/engine/trainer.py:def train(config):
+quantforge/features/liquidity.py:def add_liquidity_features(df):
+quantforge/features/market.py:def add_market_features(df):
+quantforge/features/momentum.py:def add_momentum_features(df):
+quantforge/features/registry.py:def get_features(name):
+quantforge/features/selector.py:def get_training_features(df):
+quantforge/features/statistical.py:def add_statistical_features(df):
+quantforge/features/trend.py:def add_trend_features(df):
+quantforge/features/volatility.py:def add_volatility_features(df):
+quantforge/models/factory.py:def build(config):
+quantforge/optimization/objectives.py:def portfolio_objective(metrics):
+quantforge/portfolio/allocator.py:def build_portfolio(
+quantforge/portfolio/equal_weight.py:def build_equal_weight_portfolio(
+quantforge/portfolio/inverse_volatility.py:def build_inverse_volatility_portfolio(
+quantforge/portfolio/score_weight.py:def build_score_weight_portfolio(
+quantforge/ranking/groups.py:def build_groups(df):
+quantforge/ranking/labels.py:def make_rank_labels(
+quantforge/research/benchmark.py:def save_result(result, directory="results"):
+quantforge/research/tracker.py:def save_experiment(
+quantforge/risk/transaction_cost.py:def apply_transaction_cost(
+quantforge/risk/turnover.py:def calculate_turnover(previous, current):
+quantforge/risk/turnover.py:def _set_turnover(previous, current):
+quantforge/risk/turnover.py:def _weight_turnover(previous, current):
+quantforge/training/dataset.py:def load_training_data(
+quantforge/training/dataset.py:def trading_dates(
+quantforge/training/model_factory.py:def build_lgbm_ranker(
+quantforge/training/model_factory.py:def build_lgbm_regressor(
+quantforge/training/run.py:def run(config_path):
+quantforge/utils/system.py:def get_num_threads(default=8):
