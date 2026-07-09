@@ -1,6 +1,6 @@
 from quantforge.experiment.context import ExperimentContext
 from quantforge.engine.trainer import train
-from quantforge.engine.backtest import backtest
+from quantforge.backtesting.engine import backtest
 from quantforge.experiment.artifact_manager import ArtifactManager
 from quantforge.experiment.metrics import MetricsManager
 from quantforge.experiment.validation import ValidationManager
