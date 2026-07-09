@@ -1,4 +1,4 @@
-from quantforge.engine.trainer import train
+from quantforge.trainer.engine import train
 
 
 class TrainingStage:

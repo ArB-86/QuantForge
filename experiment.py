@@ -3,7 +3,7 @@ import sys
 from multiprocessing import Process
 
 from quantforge.experiment.manager import ExperimentManager
-from quantforge.engine.trainer import train
+from quantforge.trainer.engine import train
 from quantforge.backtest_engine.engine import backtest
 from quantforge.shap.engine import shap
 from quantforge.prediction.engine import prediction
