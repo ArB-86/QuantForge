@@ -1,5 +1,5 @@
 from quantforge.pipeline.stage import Stage
-from quantforge.topn.engine import topn
+from quantforge.analysis_engine.topn import topn
 
 class TopNStage(Stage):
 
