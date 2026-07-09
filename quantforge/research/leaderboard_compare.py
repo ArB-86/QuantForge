@@ -2,7 +2,7 @@ from quantforge.leaderboard.engine_engine import (
     LeaderboardEngine,
 )
 
-from quantforge.research.comparison import (
+from quantforge.comparison.engine import (
     ExperimentComparison,
 )
 
