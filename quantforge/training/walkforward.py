@@ -1,4 +1,4 @@
-from quantforge.training.dataset_builder import DatasetBuilder
+from quantforge.dataset.loader_builder import DatasetBuilder
 from quantforge.training.model_manager import ModelManager
 from quantforge.training.checkpoint_manager import CheckpointManager
 from quantforge.training.monthly_loop import MonthlyLoop
