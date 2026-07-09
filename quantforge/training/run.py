@@ -1,5 +1,5 @@
 from quantforge.config.loader import load
-from quantforge.training.walkforward_engine import WalkForwardEngine
+from quantforge.walkforward.engine_engine import WalkForwardEngine
 
 def run(config_path):
 
