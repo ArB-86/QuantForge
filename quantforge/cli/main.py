@@ -103,17 +103,18 @@ def main():
         print("Not implemented")
 
     elif args.command == "experiment":
-        from quantforge.pipeline.experiment_pipeline import run
+        from quantforge.engine.trainer import train
 
-        context = run(args.config)
+        metrics = train(args.config)
 
         print()
         print("=" * 80)
         print("EXPERIMENT COMPLETE")
         print("=" * 80)
 
-        for k, v in context.metrics.items():
-            print(f"{k:20}: {v}")
+        if isinstance(metrics, dict):
+            for k, v in metrics.items():
+                print(f"{k:20}: {v}")
 
     elif args.command == "leaderboard":
         from quantforge.research.leaderboard_engine import LeaderboardEngine
