@@ -2,11 +2,11 @@ from pathlib import Path
 
 import pandas as pd
 
-from quantforge.portfolio.allocator import (
+from quantforge.portfolio_engine.allocator import (
     build_portfolio,
 )
-from quantforge.portfolio.constraints import PortfolioConstraints
-from quantforge.portfolio.volatility_target import (
+from quantforge.portfolio_engine.constraints import PortfolioConstraints
+from quantforge.portfolio_engine.volatility_target import (
     VolatilityTarget,
 )
 
