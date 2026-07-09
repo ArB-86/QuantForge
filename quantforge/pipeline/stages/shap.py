@@ -1,4 +1,4 @@
-from quantforge.pipeline.stage import Stage
+from quantforge.research_pipeline.stage import Stage
 from quantforge.analysis_engine.shap import shap
 
 class SHAPStage(Stage):

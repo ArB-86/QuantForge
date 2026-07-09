@@ -103,7 +103,7 @@ def main():
         print("Not implemented")
 
     elif args.command == "experiment":
-        from quantforge.experiment.runner import ExperimentRunner
+        from quantforge.research_pipeline.runner import ExperimentRunner
 
         context = ExperimentRunner(args.config).run()
 

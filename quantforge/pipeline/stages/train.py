@@ -1,4 +1,4 @@
-from quantforge.pipeline.stage import Stage
+from quantforge.research_pipeline.stage import Stage
 from quantforge.trainer.engine import train
 
 class TrainStage(Stage):
