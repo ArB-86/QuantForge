@@ -22,7 +22,7 @@ def main():
         sys.argv[1]
     )
 
-    runner = ExperimentRunner()
+    runner = run
 
     metrics = runner(
         cfg.dict()

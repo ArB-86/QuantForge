@@ -4,9 +4,7 @@ from quantforge.optimization.optuna_engine import (
     OptunaEngine,
 )
 
-from quantforge.research.runner import (
-    ExperimentRunner,
-)
+from quantforge.run import run
 
 
 config = json.load(
@@ -15,7 +13,7 @@ config = json.load(
     )
 )
 
-runner = ExperimentRunner()
+runner = run
 
 engine = OptunaEngine(
     config,

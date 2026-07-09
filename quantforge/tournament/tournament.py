@@ -1,14 +1,12 @@
-import glob
-
 from quantforge.config.config import Config
-from quantforge.research.runner import ExperimentRunner
+from quantforge.pipeline.experiment_pipeline import ExperimentPipeline
 
 
 class Tournament:
 
     def __init__(self):
 
-        self.runner = ExperimentRunner()
+        self.pipeline = ExperimentPipeline()
 
     def run(self):
 
@@ -28,7 +26,7 @@ class Tournament:
 
             cfg = Config(cfg_path)
 
-            metrics = self.runner(
+            context = self.pipeline.run(
                 cfg.dict()
             )
 
@@ -38,7 +36,7 @@ class Tournament:
 
                     cfg["name"],
 
-                    metrics["Score"]
+                    context.metrics["Score"]
 
                 )
 

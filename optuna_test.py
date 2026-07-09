@@ -2,9 +2,7 @@ from quantforge.optimization.optuna_engine import (
     OptunaEngine
 )
 
-from quantforge.research.runner import (
-    ExperimentRunner
-)
+from quantforge.run import run
 
 import json
 
@@ -14,7 +12,7 @@ cfg = json.load(
     )
 )
 
-runner = ExperimentRunner()
+runner = run
 
 engine = OptunaEngine(
     cfg,
