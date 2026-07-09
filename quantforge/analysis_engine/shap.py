@@ -1,4 +1,4 @@
-from quantforge.analysis.shap_engine import SHAPEngine
+from quantforge.diagnostics.shap import SHAPEngine
 
 
 def shap(shap_df):

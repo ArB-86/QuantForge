@@ -13,7 +13,7 @@ from quantforge.portfolio_engine.score_weight import (
 from quantforge.portfolio_engine.constraints import (
     PortfolioConstraints,
 )
-from quantforge.risk_engine.exposure import ExposureManager
+from quantforge.diagnostics.exposure import ExposureManager
 
 ALLOCATORS = {
 
