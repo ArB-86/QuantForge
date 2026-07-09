@@ -1,4 +1,4 @@
-from quantforge.database.experiments import ExperimentDB
+from quantforge.storage.database.experiments import ExperimentDB
 
 
 class Leaderboard:

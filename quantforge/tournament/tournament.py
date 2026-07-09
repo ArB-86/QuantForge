@@ -1,6 +1,6 @@
 import glob
 
-from quantforge.config.config import Config
+from quantforge.core.config.config import Config
 from quantforge.research.runner import ExperimentRunner
 
 

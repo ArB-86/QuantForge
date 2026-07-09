@@ -1,4 +1,4 @@
-from quantforge.database.logger import ExperimentLogger
+from quantforge.storage.database.logger import ExperimentLogger
 
 
 class LoggingStage:

@@ -1,6 +1,6 @@
 from lightgbm import LGBMRegressor
 
-from quantforge.utils.system import (
+from quantforge.common.utils.system import (
     get_num_threads,
 )
 

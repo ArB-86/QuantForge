@@ -1,5 +1,5 @@
 from quantforge.backtest.backtest_engine import BacktestEngine
-from quantforge.config.config import Config
+from quantforge.core.config.config import Config
 
 
 def backtest(config):

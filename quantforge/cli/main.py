@@ -3,7 +3,7 @@ from pathlib import Path
 
 from quantforge.trainer.engine import train
 from quantforge.backtest_engine.engine import backtest
-from quantforge.config.config import Config
+from quantforge.core.config.config import Config
 
 
 def main():

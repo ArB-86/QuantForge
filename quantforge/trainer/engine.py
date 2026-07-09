@@ -1,4 +1,4 @@
-from quantforge.config.config import Config
+from quantforge.core.config.config import Config
 from quantforge.walkforward.engine import WalkForwardTrainer
 
 

@@ -5,7 +5,7 @@ from quantforge.experiment.artifact_manager import ArtifactManager
 from quantforge.experiment.metrics import MetricsManager
 from quantforge.experiment.validation import ValidationManager
 from quantforge.experiment.manager import ExperimentManager
-from quantforge.config.config import Config
+from quantforge.core.config.config import Config
 
 
 class ExperimentRunner:

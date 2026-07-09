@@ -1,4 +1,4 @@
-from quantforge.config.loader import load
+from quantforge.core.config.loader import load
 
 
 class ConfigStage:
