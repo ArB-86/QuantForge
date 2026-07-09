@@ -1,4 +1,4 @@
-from quantforge.models.factory import build
+from quantforge.modeling.factory import build
 
 class Trainer:
 
