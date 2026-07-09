@@ -2,16 +2,18 @@ class Pipeline:
 
     def __init__(self):
 
-        self.steps=[]
+        self.steps = []
 
-    def add(self,step):
+    def add(self, step):
 
         self.steps.append(step)
 
-    def run(self,context):
+        return self
+
+    def run(self, context):
 
         for step in self.steps:
 
-            context=step.run(context)
+            context = step.run(context)
 
         return context
