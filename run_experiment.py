@@ -1,7 +1,7 @@
 import sys
 
 from quantforge.config.config import Config
-from quantforge.research.runner import ExperimentRunner
+from quantforge.run import run
 
 
 def main():
