@@ -4,11 +4,11 @@ import os
 
 import optuna
 
-from quantforge.optimization_engine.objectives import (
+from quantforge.automl.objectives import (
     portfolio_objective,
 )
 
-from quantforge.optimization_engine.search_space import (
+from quantforge.automl.search_space import (
     SEARCH_SPACE,
 )
 

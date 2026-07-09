@@ -5,7 +5,7 @@ from quantforge.storage.database.logger import (
     ExperimentLogger,
 )
 
-from quantforge.optimization_engine.objectives import (
+from quantforge.automl.objectives import (
     portfolio_objective,
 )
 

@@ -1,5 +1,5 @@
 from quantforge.research.validator import ExperimentValidator
-from quantforge.optimization_engine.objectives import portfolio_objective
+from quantforge.automl.objectives import portfolio_objective
 
 
 class ValidationStage:
