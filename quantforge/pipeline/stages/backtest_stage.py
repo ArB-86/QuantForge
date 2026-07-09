@@ -1,4 +1,4 @@
-from quantforge.engine.backtest import backtest
+from quantforge.backtest_engine.engine import backtest
 
 
 class BacktestStage:

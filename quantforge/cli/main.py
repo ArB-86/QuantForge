@@ -2,7 +2,7 @@ import argparse
 from pathlib import Path
 
 from quantforge.engine.trainer import train
-from quantforge.engine.backtest import backtest
+from quantforge.backtest_engine.engine import backtest
 from quantforge.config.config import Config
 
 

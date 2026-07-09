@@ -1,5 +1,5 @@
 from quantforge.engine.trainer import train
-from quantforge.engine.backtest import backtest
+from quantforge.backtest_engine.engine import backtest
 
 from quantforge.database.logger import (
     ExperimentLogger,
