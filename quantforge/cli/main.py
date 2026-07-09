@@ -103,17 +103,30 @@ def main():
         print("Not implemented")
 
     elif args.command == "experiment":
-        from quantforge.engine.trainer import train
+        from quantforge.experiment.runner import ExperimentRunner
 
-        metrics = train(args.config)
+        context = ExperimentRunner(args.config).run()
 
         print()
         print("=" * 80)
         print("EXPERIMENT COMPLETE")
         print("=" * 80)
 
-        if isinstance(metrics, dict):
-            for k, v in metrics.items():
+        print("Status :", context.status)
+
+        if context.metrics:
+            print()
+            print("Metrics")
+            print("-" * 80)
+
+            for k, v in context.metrics.items():
+                print(f"{k:20}: {v}")
+
+        if context.artifacts:
+            print()
+            print("Artifacts")
+            print("-" * 80)
+            for k, v in context.artifacts.items():
                 print(f"{k:20}: {v}")
 
     elif args.command == "leaderboard":
