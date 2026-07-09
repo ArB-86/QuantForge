@@ -7,7 +7,7 @@ from quantforge.engine.trainer import train
 from quantforge.engine.backtest import backtest
 from quantforge.shap.engine import shap
 from quantforge.prediction.engine import prediction
-from quantforge.engine.topn import topn
+from quantforge.topn.engine import topn
 
 manager = ExperimentManager(sys.argv[1])
 
