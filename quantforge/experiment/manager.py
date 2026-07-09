@@ -2,7 +2,7 @@ import json
 
 from pathlib import Path
 
-from quantforge.research.registry import (
+from quantforge.registry.database import (
     ExperimentRegistry
 )
 

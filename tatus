@@ -1,0 +1,61 @@
+  alpha-research                         [m a5b00f4 Remove accidental EOF file
+  audit/dependency-graph                 [m c546b4c [[34morigin/audit/dependency-graph[m] audit: add dependency graph and package import inventory
+  audit/experiment-storage               [m b45d8aa feat: implement artifact manager
+  audit/package-duplicates               [m 8355f95 [[34morigin/audit/package-duplicates[m] audit: inventory duplicate modules and APIs
+  audit/repository-health                [m 6eda38e Initial QuantForge commit
+  feat/research-diagnostics              [m 8fdee7c [[34morigin/feat/research-diagnostics[m] feat: restore end-to-end research pipeline
+  feature-optimization-v2                [m c4b4c98 refactor: migrate optimization subsystem
+  feature-platform-cleanup               [m 2189ff7 refactor: introduce platform core architecture
+* [32mfeature-research-platform-v3           [m fd0dc30 [[34morigin/feature-research-platform-v3[m] refactor: introduce research pipeline architecture
+  feature-risk-v2                        [m f02e756 refactor: migrate risk subsystem
+  feature-walkforward-v2                 [m 008166a refactor: migrate walkforward subsystem
+  feature/analysis-engine-v2             [m 372df52 refactor: consolidate analysis engines
+  feature/artifact-engine                [m 1a6968c [[34morigin/feature/artifact-engine[m] feat: scaffold experiment artifact engine
+  feature/artifact-manager               [m b45d8aa [[34morigin/feature/artifact-manager[m] feat: implement artifact manager
+  feature/backtest-engine-v2             [m a29f07b refactor: migrate backtest engine to dedicated package
+  feature/data-v2                        [m c2a1dc3 refactor: migrate dataset subsystem
+  feature/dataset-stage                  [m d8b7707 [[34morigin/feature/dataset-stage[m] feat: introduce dataset pipeline stage
+  feature/experiment-pipeline            [m 58f9e18 [[34morigin/feature/experiment-pipeline[m] feat: introduce experiment pipeline entrypoint
+  feature/feature-importance             [m a978c03 [[34morigin/feature/feature-importance[m] feat: implement feature importance diagnostics
+  feature/ic-engine                      [m 342f977 [[34morigin/feature/ic-engine[m] feat: implement information coefficient diagnostics
+  feature/model-registry                 [m a63639f feat: introduce pluggable model registry
+  feature/models-v2                      [m 8bbc8ff refactor: migrate modeling subsystem
+  feature/pipeline-engine                [m df5ddab [[34morigin/feature/pipeline-engine[m] feat: add pipeline configuration stage
+  feature/portfolio-v2                   [m 5dcb437 refactor: migrate portfolio engine
+  feature/prediction-engine-v2           [m a2369ce refactor: migrate prediction engine to dedicated package
+  feature/purged-cv                      [m 0356745 [[34morigin/feature/purged-cv[m] feat: scaffold time series validation framework
+  feature/rank-ic                        [m cfe1a82 [[34morigin/feature/rank-ic[m] feat: implement rank information coefficient
+  feature/research-diagnostics           [m 702cfc0 [[34morigin/feature/research-diagnostics[m] feat: scaffold research diagnostics
+  feature/research-pipeline-v2           [m 9e004e0 [[34morigin/feature/research-pipeline-v2[m] feat: add experiment validation and artifact persistence
+  feature/research-report                [m a42552c infra: add repository quality gate script
+  feature/shap-engine-v2                 [m 5e92eff refactor: migrate shap engine to dedicated package
+  feature/topn-engine-v2                 [m 5db7ef4 refactor: migrate topn engine to dedicated package
+  feature/training-engine-v2             [m 1e20daa refactor: migrate training engine to dedicated package
+  feature/training-stage                 [m 6b6f3e2 [[34morigin/feature/training-stage[m] Merge branch 'refactor/remove-model-manager' into feature/training-stage
+  feature/unified-research-runner        [m 6eda38e Initial QuantForge commit
+  improve-alpha                          [m cb56b22 [[34morigin/improve-alpha[m] chore: stabilize legacy walkforward pipeline
+  infra/code-quality                     [m 2bc795f [[34morigin/infra/code-quality[m] infra: enforce formatting, linting and CI
+  infra/git-hooks                        [m 7814968 [[34morigin/infra/git-hooks[m] infra: enforce repository quality checks via pre-commit hook
+  infra/github-actions                   [m 800d30e [[34morigin/infra/github-actions[m] ci: add GitHub Actions quality pipeline
+  infra/quality-gates                    [m a42552c [[34morigin/infra/quality-gates[m] infra: add repository quality gate script
+  integration/v4                         [m d953d22 [[34morigin/integration/v4[m] chore: remove accidental stray file
+  main                                   [m 6eda38e [[34morigin/main[m] Initial QuantForge commit
+  quantforge-v2                          [m e4c5c87 QuantForge V2 research database and experiment tracking
+  refactor/canonical-engines             [m 1530711 [[34morigin/refactor/canonical-engines[m] audit: define canonical engine architecture
+  refactor/phase1-cleanup                [m 4c0d381 [[34morigin/refactor/phase1-cleanup[m] refactor: remove obsolete training model factory
+  refactor/remove-experiment-runner      [m f27501d [[34morigin/refactor/remove-experiment-runner[m] refactor: delegate experiment runner to pipeline
+  refactor/remove-experiment-runner-final[m 14f8dd2 [[34morigin/refactor/remove-experiment-runner-final[m] refactor: route CLI through experiment pipeline
+  refactor/remove-model-manager          [m 7523e72 [[34morigin/refactor/remove-model-manager[m] refactor: remove legacy model manager
+  refactor/remove-runner-dependency      [m 285b070 [[34morigin/refactor/remove-runner-dependency[m] refactor: migrate entrypoints to unified runner
+  refactor/remove-training-model-factory [m 4c0d381 [[34morigin/refactor/remove-training-model-factory[m] refactor: remove obsolete training model factory
+  refactor/remove-training-run           [m eecc5b6 [[34morigin/refactor/remove-training-run[m] refactor: remove redundant training run wrapper
+  refactor/remove-versioned-scripts      [m a480712 [[34morigin/refactor/remove-versioned-scripts[m] chore: add migration inventory for legacy scripts
+  refactor/remove-walkforward-debt       [m 6a4d474 [[34morigin/refactor/remove-walkforward-debt[m] refactor: remove duplicate walkforward engine
+  refactor/remove-walkforward-legacy     [m ebee6ef [[34morigin/refactor/remove-walkforward-legacy[m] refactor: remove legacy walkforward implementation
+  refactor/restore-walkforward           [m 14f8dd2 refactor: route CLI through experiment pipeline
+  refactor/tournament-pipeline           [m f27501d refactor: delegate experiment runner to pipeline
+  refactor/unified-experiment-entrypoint [m fc0b739 [[34morigin/refactor/unified-experiment-entrypoint[m] refactor: introduce unified experiment entrypoint
+  refactor/unified-model-layer           [m 6235b97 [[34morigin/refactor/unified-model-layer[m] refactor: remove duplicate LightGBM wrappers
+  refactor/unified-research-engine       [m 6eda38e Initial QuantForge commit
+  refactor/walkforward-engine            [m 2403cfa [[34morigin/refactor/walkforward-engine[m] audit: inventory walkforward implementations
+  research                               [m 45c1cdf Research Platform v1
