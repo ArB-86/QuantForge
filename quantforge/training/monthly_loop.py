@@ -1,139 +1,124 @@
 import pandas as pd
-import numpy as np
-from pathlib import Path
-import logging
-from datetime import datetime
-
-from quantforge.data.loader import DataLoader
-from quantforge.features.processor import FeatureProcessor
-from quantforge.models.factory import build
-from quantforge.portfolio.allocator import build_portfolio
-from quantforge.backtest.simulator import simulate
-from quantforge.backtest.metrics import evaluate
-from quantforge.portfolio.volatility_target import VolatilityTarget
-
-logger = logging.getLogger(__name__)
 
 
 class MonthlyLoop:
-    """Monthly training and backtesting loop for walk-forward analysis."""
 
-    def __init__(self, config, model_manager=None):
-        self.config = config
+    def __init__(
+        self,
+        df,
+        features,
+        target,
+        model_manager,
+        checkpoint_manager,
+        purge_days=5,
+    ):
+
+        self.df = df
+        self.features = features
+        self.target = target
+
         self.model_manager = model_manager
-        self.loader = DataLoader(config)
-        self.feature_processor = FeatureProcessor(config)
+        self.checkpoint_manager = checkpoint_manager
 
-    def _load_data(self, train_start, train_end, test_start, test_end):
-        """Load and prepare training and test data for a specific period."""
-        # Load training data
-        train_df = self.loader.load(
-            start_date=train_start,
-            end_date=train_end,
+        self.purge_days = purge_days
+
+        self.trading_dates = sorted(df["Date"].unique())
+
+    def build_months(
+        self,
+        start="2016-01-01",
+    ):
+
+        return pd.date_range(
+            start=pd.Timestamp(start),
+            end=self.df["Date"].max(),
+            freq="MS",
         )
 
-        # Load test data
-        test_df = self.loader.load(
-            start_date=test_start,
-            end_date=test_end,
-        )
+    def run(self):
 
-        # Process features
-        X_train, y_train = self.feature_processor.process(train_df)
-        X_test, y_test = self.feature_processor.process(test_df)
+        completed = self.checkpoint_manager.completed_months()
 
-        return X_train, y_train, X_test, y_test, test_df
+        months = self.build_months()
 
-    def _train_model(self, X_train, y_train):
-        """Train model for the current period."""
-        # Directly use model_manager as the model instance
-        model = self.model_manager
+        model = None
 
-        # Fit the model
-        model.fit(X_train, y_train)
+        for i in range(
+            36,
+            len(months) - 1,
+        ):
 
-        return model
+            train_end = months[i]
 
-    def _generate_predictions(self, model, X_test, test_df):
-        """Generate predictions on test data."""
-        test_df = test_df.copy()
+            test_start = months[i]
 
-        # Make predictions
-        test_df['PRED_RETURN'] = model.predict(X_test)
+            test_end = months[i + 1]
 
-        return test_df
+            month_key = test_start.to_period("M").strftime("%Y-%m")
 
-    def _backtest(self, predictions, period_info):
-        """Run backtest on predictions."""
-        # Build portfolio
-        portfolio = build_portfolio(
-            predictions,
-            method=self.config.get('portfolio', 'equal_weight'),
-            score_column='PRED_RETURN',
-            top_n=self.config.get('top_n', 15),
-            max_stock_weight=self.config.get('max_stock_weight', 1.0),
-        )
+            if month_key in completed:
 
-        # Simulate returns
-        portfolio = simulate(
-            portfolio,
-            return_column=self.config['target'],
-            holding_days=self.config.get('holding_days', 20),
-            round_trip_cost=self.config.get('transaction_cost', 0.003),
-        )
+                print(
+                    "Skipping:",
+                    month_key,
+                )
 
-        # Apply volatility targeting
-        portfolio['Return'] = VolatilityTarget(
-            target_vol=self.config.get('target_volatility', 0.20),
-        ).apply(portfolio['Return'])
+                continue
 
-        # Recalculate equity curve
-        portfolio['Equity'] = (1 + portfolio['Return']).cumprod()
+            train_dates = [d for d in self.trading_dates if d < train_end]
 
-        # Evaluate metrics
-        metrics = evaluate(
-            portfolio,
-            holding_days=self.config.get('holding_days', 20),
-        )
+            if len(train_dates) <= self.purge_days:
 
-        return portfolio, metrics
+                continue
 
-    def run(self, train_start, train_end, test_start, test_end):
-        """Run the complete monthly loop for a specific period."""
-        logger.info(f"Running monthly loop from {train_start} to {test_end}")
+            purge_end = train_dates[-self.purge_days]
 
-        # Load data
-        X_train, y_train, X_test, y_test, test_df = self._load_data(
-            train_start, train_end, test_start, test_end
-        )
+            train = self.df[self.df["Date"] < purge_end]
 
-        logger.info(f"Training data shape: {X_train.shape}")
-        logger.info(f"Test data shape: {X_test.shape}")
+            test = self.df[
+                (self.df["Date"] >= test_start) & (self.df["Date"] < test_end)
+            ]
 
-        # Train model
-        model = self._train_model(X_train, y_train)
-        logger.info("Model training completed")
+            if len(test) == 0:
 
-        # Generate predictions
-        predictions = self._generate_predictions(model, X_test, test_df)
-        logger.info(f"Predictions generated for {len(predictions)} rows")
+                continue
 
-        # Run backtest
-        portfolio, metrics = self._backtest(predictions, {
-            'train_start': train_start,
-            'train_end': train_end,
-            'test_start': test_start,
-            'test_end': test_end,
-        })
+            print()
 
-        # Log metrics
-        logger.info("Backtest metrics:")
-        for k, v in metrics.items():
-            logger.info(f"  {k}: {v:.4f}")
+            print("=" * 80)
 
-        return {
-            'predictions': predictions,
-            'portfolio': portfolio,
-            'metrics': metrics,
-            'model': model,
-        }
+            print(month_key)
+
+            print(
+                len(train),
+                "train rows",
+            )
+
+            print(
+                len(test),
+                "test rows",
+            )
+
+            model = self.model_manager
+
+            model.fit(
+                train[self.features],
+                train[self.target],
+            )
+
+            pred = model.predict(test[self.features])
+
+            out = test.copy()
+
+            out["PRED_RETURN"] = pred
+
+            self.checkpoint_manager.append_predictions(out)
+
+            print(
+                "Saved",
+                month_key,
+            )
+
+        if model is not None:
+
+            self.checkpoint_manager.save_model(model)
