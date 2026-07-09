@@ -1,10 +1,10 @@
 from quantforge.config.loader import load
-from quantforge.training.walkforward_engine import WalkForwardEngine
+from quantforge.training.walkforward import WalkForwardTrainer
 
 def run(config_path):
 
     config = load(config_path)
 
-    engine = WalkForwardEngine(config)
+    engine = WalkForwardTrainer(config)
 
     return engine
