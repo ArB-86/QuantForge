@@ -1,0 +1,6 @@
+"""
+SignalEngine
+"""
+
+class SignalEngine:
+    pass

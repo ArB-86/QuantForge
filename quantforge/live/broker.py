@@ -1,0 +1,6 @@
+"""
+PaperBroker
+"""
+
+class PaperBroker:
+    pass

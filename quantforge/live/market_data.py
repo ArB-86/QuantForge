@@ -1,0 +1,6 @@
+"""
+MarketDataFeed
+"""
+
+class MarketDataFeed:
+    pass

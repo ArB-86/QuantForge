@@ -1,0 +1,6 @@
+"""
+RiskManager
+"""
+
+class RiskManager:
+    pass

@@ -1,0 +1,6 @@
+"""
+TradingCalendar
+"""
+
+class TradingCalendar:
+    pass
