@@ -1,6 +1,6 @@
 from quantforge.research_pipeline.context import ExperimentContext
 from quantforge.trainer.engine import train
-from quantforge.backtesting.engine import backtest
+from quantforge.backtest_engine.engine import backtest
 from quantforge.artifacts.versioning import ArtifactManager
 from quantforge.experiment.metrics import MetricsManager
 from quantforge.research_pipeline.validation import ValidationManager

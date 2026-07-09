@@ -1,0 +1,26 @@
+[35mexperiment.py[m[36m:[m[32m7[m[36m:[mfrom quantforge.[1;31mbacktest_engine[m.engine import backtest
+[35mquantforge.svg[m[36m:[m[32m212[m[36m:[m<!-- quantforge_backtest_[1;31mbacktest_engine[m -->
+[35mquantforge.svg[m[36m:[m[32m214[m[36m:[m<title>quantforge_backtest_[1;31mbacktest_engine[m</title><style>.edge>path:hover{stroke-width:8}</style>
+[35mquantforge.svg[m[36m:[m[32m218[m[36m:[m<text text-anchor="middle" x="2234.6188" y="-443.9788" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#ffffff">[1;31mbacktest_engine[m</text>
+[35mquantforge.svg[m[36m:[m[32m220[m[36m:[m<!-- pandas&#45;&gt;quantforge_backtest_[1;31mbacktest_engine[m -->
+[35mquantforge.svg[m[36m:[m[32m222[m[36m:[m<title>pandas&#45;&gt;quantforge_backtest_[1;31mbacktest_engine[m</title><style>.edge>path:hover{stroke-width:8}</style>
+[35mquantforge.svg[m[36m:[m[32m225[m[36m:[m<!-- quantforge_[1;31mbacktest_engine[m -->
+[35mquantforge.svg[m[36m:[m[32m227[m[36m:[m<title>quantforge_[1;31mbacktest_engine[m</title><style>.edge>path:hover{stroke-width:8}</style>
+[35mquantforge.svg[m[36m:[m[32m233[m[36m:[m<!-- pandas&#45;&gt;quantforge_[1;31mbacktest_engine[m -->
+[35mquantforge.svg[m[36m:[m[32m235[m[36m:[m<title>pandas&#45;&gt;quantforge_[1;31mbacktest_engine[m</title><style>.edge>path:hover{stroke-width:8}</style>
+[35mquantforge.svg[m[36m:[m[32m397[m[36m:[m<!-- quantforge_backtest_[1;31mbacktest_engine[m&#45;&gt;quantforge_engine_backtest -->
+[35mquantforge.svg[m[36m:[m[32m399[m[36m:[m<title>quantforge_backtest_[1;31mbacktest_engine[m&#45;&gt;quantforge_engine_backtest</title><style>.edge>path:hover{stroke-width:8}</style>
+[35mquantforge.svg[m[36m:[m[32m402[m[36m:[m<!-- quantforge_backtest_metrics&#45;&gt;quantforge_backtest_[1;31mbacktest_engine[m -->
+[35mquantforge.svg[m[36m:[m[32m404[m[36m:[m<title>quantforge_backtest_metrics&#45;&gt;quantforge_backtest_[1;31mbacktest_engine[m</title><style>.edge>path:hover{stroke-width:8}</style>
+[35mquantforge.svg[m[36m:[m[32m408[m[36m:[m<!-- quantforge_backtest_simulator&#45;&gt;quantforge_backtest_[1;31mbacktest_engine[m -->
+[35mquantforge.svg[m[36m:[m[32m410[m[36m:[m<title>quantforge_backtest_simulator&#45;&gt;quantforge_backtest_[1;31mbacktest_engine[m</title><style>.edge>path:hover{stroke-width:8}</style>
+[35mquantforge.svg[m[36m:[m[32m833[m[36m:[m<!-- quantforge_portfolio&#45;&gt;quantforge_backtest_[1;31mbacktest_engine[m -->
+[35mquantforge.svg[m[36m:[m[32m835[m[36m:[m<title>quantforge_portfolio&#45;&gt;quantforge_backtest_[1;31mbacktest_engine[m</title><style>.edge>path:hover{stroke-width:8}</style>
+[35mquantforge.svg[m[36m:[m[32m847[m[36m:[m<!-- quantforge_portfolio_allocator&#45;&gt;quantforge_backtest_[1;31mbacktest_engine[m -->
+[35mquantforge.svg[m[36m:[m[32m849[m[36m:[m<title>quantforge_portfolio_allocator&#45;&gt;quantforge_backtest_[1;31mbacktest_engine[m</title><style>.edge>path:hover{stroke-width:8}</style>
+[35mquantforge/backtest_engine/engine.py[m[36m:[m[32m1[m[36m:[mfrom quantforge.backtest.[1;31mbacktest_engine[m import BacktestEngine
+[35mquantforge/cli/main.py[m[36m:[m[32m5[m[36m:[mfrom quantforge.[1;31mbacktest_engine[m.engine import backtest
+[35mquantforge/pipeline/stages/backtest.py[m[36m:[m[32m2[m[36m:[mfrom quantforge.[1;31mbacktest_engine[m.engine import backtest
+[35mquantforge/pipeline/stages/backtest_stage.py[m[36m:[m[32m1[m[36m:[mfrom quantforge.[1;31mbacktest_engine[m.engine import backtest
+[35mquantforge/research/runner.py[m[36m:[m[32m2[m[36m:[mfrom quantforge.[1;31mbacktest_engine[m.engine import backtest
+[35mquantforge/research_pipeline/runner.py[m[36m:[m[32m3[m[36m:[mfrom quantforge.[1;31mbacktest_engine[m.engine import backtest

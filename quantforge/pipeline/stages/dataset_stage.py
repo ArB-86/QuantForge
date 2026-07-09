@@ -1,4 +1,4 @@
-from quantforge.dataset.loader_builder import DatasetBuilder
+from quantforge.dataset.builder import DatasetBuilder
 
 
 class DatasetStage:
