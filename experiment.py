@@ -5,8 +5,8 @@ from multiprocessing import Process
 from quantforge.experiment.manager import ExperimentManager
 from quantforge.engine.trainer import train
 from quantforge.engine.backtest import backtest
-from quantforge.engine.shap_engine import shap
-from quantforge.engine.prediction import prediction
+from quantforge.shap.engine import shap
+from quantforge.prediction.engine import prediction
 from quantforge.engine.topn import topn
 
 manager = ExperimentManager(sys.argv[1])

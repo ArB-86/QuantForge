@@ -1,5 +1,5 @@
 from quantforge.pipeline.stage import Stage
-from quantforge.engine.shap_engine import shap
+from quantforge.shap.engine import shap
 
 class SHAPStage(Stage):
 

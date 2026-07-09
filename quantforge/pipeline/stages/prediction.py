@@ -1,5 +1,5 @@
 from quantforge.pipeline.stage import Stage
-from quantforge.engine.prediction import prediction
+from quantforge.prediction.engine import prediction
 
 class PredictionStage(Stage):
 
