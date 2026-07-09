@@ -1,7 +1,7 @@
 import pandas as pd
 
-from quantforge.risk.turnover import calculate_turnover
-from quantforge.risk.transaction_cost import apply_transaction_cost
+from quantforge.risk_engine.turnover import calculate_turnover
+from quantforge.risk_engine.transaction_cost import apply_transaction_cost
 
 
 def simulate(
