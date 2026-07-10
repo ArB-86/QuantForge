@@ -1,4 +1,4 @@
-from quantforge.leaderboard.engine_engine import (
+from quantforge.leaderboard.engine import (
     LeaderboardEngine,
 )
 
