@@ -4,14 +4,17 @@ from quantforge.live_trading.order import LiveOrder
 
 
 class LiveTradingEngine:
-    def __init__(self, broker=None):
+    def __init__(self, broker=None, validate_market_hours=False):
         self.broker = broker or PaperBroker()
+        self.validate_market_hours = validate_market_hours
 
     def login(self):
         return self.broker.login()
 
     def submit(self, order: LiveOrder):
-        MarketHours.ensure_open()
+        if self.validate_market_hours:
+            MarketHours.ensure_open()
+
         return self.broker.place_order(
             ticker=order.ticker,
             side=order.side.value,

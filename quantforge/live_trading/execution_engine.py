@@ -12,10 +12,11 @@ from quantforge.live_trading.observer import Observable
 
 class LiveExecutionEngine(Observable):
 
-    def __init__(self, connector="paper"):
+    def __init__(self, connector="paper", validate_market_hours=False):
         Observable.__init__(self)
         self.router = OrderRouter(connector)
         self.session = TradingSession()
+        self.validate_market_hours = validate_market_hours
         self.risk = PreTradeRisk()
         self.posttrade = PostTradeProcessor()
         self.audit = AuditLogger()
@@ -24,7 +25,8 @@ class LiveExecutionEngine(Observable):
 
     def execute(self, orders):
 
-        self.session.ensure_open()
+        if self.validate_market_hours:
+            self.session.ensure_open()
 
         fills = []
 
