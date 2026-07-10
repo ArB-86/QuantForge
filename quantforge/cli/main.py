@@ -74,6 +74,7 @@ def main():
     # -------------------
 
     sub.add_parser("tournament")
+    sub.add_parser("paper")
 
     args = parser.parse_args()
 
