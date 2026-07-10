@@ -1,4 +1,5 @@
 from quantforge.live_trading.paper_broker import PaperBroker
+from quantforge.live_trading.market_hours import MarketHours
 from quantforge.live_trading.order import LiveOrder
 
 
@@ -10,6 +11,7 @@ class LiveTradingEngine:
         return self.broker.login()
 
     def submit(self, order: LiveOrder):
+        MarketHours.ensure_open()
         return self.broker.place_order(
             ticker=order.ticker,
             side=order.side.value,
