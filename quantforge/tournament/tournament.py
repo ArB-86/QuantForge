@@ -7,8 +7,7 @@ from quantforge.research_pipeline.runner import ExperimentRunner
 class Tournament:
 
     def __init__(self):
-
-        self.runner = ExperimentRunner()
+        pass
 
     def run(self):
 
@@ -28,9 +27,9 @@ class Tournament:
 
             cfg = Config(cfg_path)
 
-            metrics = self.runner(
+            metrics = ExperimentRunner(
                 cfg.dict()
-            )
+            ).run().metrics
 
             results.append(
 
