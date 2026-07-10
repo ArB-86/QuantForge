@@ -8,6 +8,7 @@ def build_score_weight_portfolio(
     top_n=10,
     max_weight=0.20,
     min_weight=0.02,
+    confidence_quantile=0.90,
 ):
     """
     Score-weighted portfolio with volatility adjustment and filters.
@@ -30,6 +31,19 @@ def build_score_weight_portfolio(
         ]
 
         # Safety check
+        if len(g) == 0:
+            continue
+
+        #
+        # Confidence Filter
+        #
+
+        g = g[
+            g[score_column]
+            >
+            g[score_column].quantile(confidence_quantile)
+        ]
+
         if len(g) == 0:
             continue
 

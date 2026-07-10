@@ -54,6 +54,11 @@ class BacktestEngine:
 
             top_n=self.config["top_n"],
 
+            confidence_quantile=self.config.get(
+                "confidence_quantile",
+                0.90,
+            ),
+
             max_stock_weight=self.config.get(
                 "max_stock_weight",
                 1.0,
