@@ -1,7 +1,7 @@
 import glob
 
 from quantforge.core.config.config import Config
-from quantforge.research.runner import ExperimentRunner
+from quantforge.research_pipeline.runner import ExperimentRunner
 
 
 class Tournament:

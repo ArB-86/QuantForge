@@ -169,7 +169,16 @@ def main():
         print(separator)
 
     elif args.command == "tournament":
-        print("Not implemented")
+        from quantforge.tournament.tournament import Tournament
+
+        results = Tournament().run()
+
+        print("\n" + "=" * 80)
+        print("TOURNAMENT RESULTS")
+        print("=" * 80)
+
+        for i, (name, score) in enumerate(results, 1):
+            print(f"{i:2d}. {name:<40} {score:.6f}")
 
 
 if __name__ == "__main__":
