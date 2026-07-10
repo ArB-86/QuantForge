@@ -6,6 +6,8 @@ from quantforge.experiment.metrics import MetricsManager
 from quantforge.research_pipeline.validation import ValidationManager
 from quantforge.experiment.manager import ExperimentManager
 from quantforge.core.config.config import Config
+from quantforge.storage.database.logger import ExperimentLogger  # new import
+from quantforge.automl.objectives import portfolio_objective  # new import
 
 
 class ExperimentRunner:
@@ -54,8 +56,21 @@ class ExperimentRunner:
         context.target = self.config["target"]
         context.feature_names = self.config["features"]
 
+        # Validate the experiment (single call)
         ValidationManager(context).validate()
-        ValidationManager(context).validate()
+
+        # Calculate portfolio objective score
+        score = portfolio_objective(metrics)
+        metrics["Score"] = score
+
+        # Log experiment to database
+        logger = ExperimentLogger()
+        logger.log(
+            self.config,
+            metrics,
+            score,
+        )
+
         MetricsManager(context).save()
         ArtifactManager(context).save()
 

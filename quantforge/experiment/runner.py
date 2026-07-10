@@ -1,11 +1,13 @@
 from quantforge.research_pipeline.context import ExperimentContext
 from quantforge.trainer.engine import train
-from quantforge.backtesting.engine import backtest
+from quantforge.backtest_engine.engine import backtest
 from quantforge.artifacts.versioning import ArtifactManager
 from quantforge.experiment.metrics import MetricsManager
 from quantforge.research_pipeline.validation import ValidationManager
 from quantforge.experiment.manager import ExperimentManager
 from quantforge.core.config.config import Config
+from quantforge.storage.database.logger import ExperimentLogger
+from quantforge.automl.objectives import portfolio_objective
 
 
 class ExperimentRunner:
@@ -55,7 +57,16 @@ class ExperimentRunner:
         context.feature_names = self.config["features"]
 
         ValidationManager(context).validate()
-        ValidationManager(context).validate()
+
+        score = portfolio_objective(metrics)
+        metrics["Score"] = score
+
+        logger = ExperimentLogger()
+        logger.log(
+            self.config,
+            metrics,
+            score,
+        )
         MetricsManager(context).save()
         ArtifactManager(context).save()
 

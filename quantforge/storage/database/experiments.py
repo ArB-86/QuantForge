@@ -1,4 +1,5 @@
 import sqlite3
+import pandas as pd  # new import
 from pathlib import Path
 
 
@@ -96,20 +97,30 @@ class ExperimentDB:
         n=20,
     ):
 
-        return self.conn.execute(
-
+        rows = self.conn.execute(
             """
-
             SELECT *
-
             FROM experiments
-
             ORDER BY score DESC
-
             LIMIT ?
-
             """,
-
-            (n,)
-
+            (n,),
         ).fetchall()
+
+        columns = [
+            "id",
+            "name",
+            "model",
+            "sharpe",
+            "cagr",
+            "maxdd",
+            "winrate",
+            "score",
+            "params",
+            "created",
+        ]
+
+        return pd.DataFrame(
+            rows,
+            columns=columns,
+        )

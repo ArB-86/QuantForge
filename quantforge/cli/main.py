@@ -130,9 +130,9 @@ def main():
                 print(f"{k:20}: {v}")
 
     elif args.command == "leaderboard":
-        from quantforge.leaderboard.engine_engine import LeaderboardEngine
+        from quantforge.leaderboard.engine import Leaderboard
 
-        df = LeaderboardEngine().top(20)
+        df = Leaderboard().top(20)
 
         cols = [
             "id",
