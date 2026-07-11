@@ -10,6 +10,10 @@ from quantforge.portfolio_engine.score_weight import (
     build_score_weight_portfolio,
 )
 
+from quantforge.portfolio_engine.risk_parity import (
+    build_risk_parity_portfolio,
+)
+
 from quantforge.portfolio_engine.constraints import (
     PortfolioConstraints,
 )
@@ -25,6 +29,9 @@ ALLOCATORS = {
 
     "score_weight":
         build_score_weight_portfolio,
+
+    "risk_parity":
+        build_risk_parity_portfolio,
 
 }
 

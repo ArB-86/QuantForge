@@ -115,44 +115,42 @@ class OptunaEngine:
         metrics = self.runner(cfg)
 
         #
-        # Soft penalty instead of hard rejection
+        # Soft penalties instead of hard rejection
         #
+
+        score = portfolio_objective(metrics)
 
         if not metrics["Valid"]:
 
-            return (
+            penalty = 0.0
 
-                metrics.get(
-                    "Sharpe",
-                    0,
-                )
+            if metrics["Sharpe"] < 1.0:
+                penalty += (1.0 - metrics["Sharpe"]) * 5
 
-                - 100
+            if metrics["Max Drawdown"] < -0.40:
+                penalty += abs(metrics["Max Drawdown"] + 0.40) * 20
 
-                - abs(
-                    metrics.get(
-                        "Max Drawdown",
-                        1,
-                    )
-                )
+            if metrics["Win Rate"] < 0.45:
+                penalty += (0.45 - metrics["Win Rate"]) * 10
 
-            )
+            score -= penalty
 
-        return portfolio_objective(
-            metrics
-        )
+        return score
 
     def optimize(
         self,
         n_trials=100,
     ):
 
+        # Create directory for study storage
+        study_dir = Path("results/studies")
+        study_dir.mkdir(parents=True, exist_ok=True)
+
         study = optuna.create_study(
-
             study_name="QuantForge",
-
+            storage=f"sqlite:///{study_dir/'quantforge.db'}",
+            load_if_exists=True,
             direction="maximize",
-
         )
 
         study.optimize(
@@ -160,6 +158,8 @@ class OptunaEngine:
             self.objective,
 
             n_trials=n_trials,
+
+            n_jobs=min(os.cpu_count(), 8),
 
             show_progress_bar=True,
 

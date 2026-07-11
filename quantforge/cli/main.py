@@ -5,7 +5,6 @@ from quantforge.trainer.engine import train
 from quantforge.backtest_engine.engine import backtest
 from quantforge.core.config.config import Config
 
-
 def main():
 
     parser = argparse.ArgumentParser(
@@ -44,13 +43,19 @@ def main():
     )
 
     # -------------------
-    # optimize
+    # optimize (UPDATED)
     # -------------------
 
     p = sub.add_parser("optimize")
     p.add_argument(
         "--config",
         required=True,
+    )
+    p.add_argument(
+        "--trials",
+        type=int,
+        default=100,
+        help="Number of Optuna trials",
     )
 
     # -------------------
@@ -102,7 +107,13 @@ def main():
         backtest(args.config)
 
     elif args.command == "optimize":
-        print("Not implemented")
+        from quantforge.research.runner import ExperimentRunner
+        from quantforge.automl.engine import OptunaEngine
+
+        cfg = Config(args.config).dict()
+        runner = ExperimentRunner()
+        engine = OptunaEngine(base_config=cfg, runner=runner)
+        engine.optimize(n_trials=args.trials)
 
     elif args.command == "experiment":
         from quantforge.research_pipeline.runner import ExperimentRunner
@@ -181,7 +192,6 @@ def main():
 
         for i, (name, score) in enumerate(results, 1):
             print(f"{i:2d}. {name:<40} {score:.6f}")
-
 
 if __name__ == "__main__":
     main()

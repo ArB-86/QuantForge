@@ -1,6 +1,7 @@
 import sqlite3
-import pandas as pd  # new import
+import pandas as pd
 from pathlib import Path
+import threading
 
 
 class ExperimentDB:
@@ -12,7 +13,8 @@ class ExperimentDB:
         )
 
         self.conn = sqlite3.connect(
-            "database/experiments.db"
+            "database/experiments.db",
+            check_same_thread=False,   # Allows multi-threaded access
         )
 
         self.conn.execute("""
@@ -45,52 +47,55 @@ class ExperimentDB:
 
         self.conn.commit()
 
+        self.lock = threading.Lock()   # For thread-safe insert
+
     def insert(
         self,
         row,
     ):
 
-        self.conn.execute(
+        with self.lock:
+            self.conn.execute(
 
-            """
+                """
 
-            INSERT INTO experiments(
+                INSERT INTO experiments(
 
-                name,
-                model,
-                sharpe,
-                cagr,
-                maxdd,
-                winrate,
-                score,
-                params
+                    name,
+                    model,
+                    sharpe,
+                    cagr,
+                    maxdd,
+                    winrate,
+                    score,
+                    params
+
+                )
+
+                VALUES(
+
+                    ?,?,?,?,?,?,?,?
+
+                )
+
+                """,
+
+                (
+
+                    row["name"],
+                    row["model"],
+                    row["Sharpe"],
+                    row["CAGR"],
+                    row["Max Drawdown"],
+                    row["Win Rate"],
+                    row["Score"],
+                    row["params"],
+
+                )
 
             )
 
-            VALUES(
-
-                ?,?,?,?,?,?,?,?
-
-            )
-
-            """,
-
-            (
-
-                row["name"],
-                row["model"],
-                row["Sharpe"],
-                row["CAGR"],
-                row["Max Drawdown"],
-                row["Win Rate"],
-                row["Score"],
-                row["params"],
-
-            )
-
-        )
-
-        self.conn.commit()
+            self.conn.commit()
 
     def top(
         self,

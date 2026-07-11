@@ -8,7 +8,7 @@
     "prediction_file": "../data/checkpoints/monthly_walkforward_regression_v17.csv",
     "feature_store": "v3",
     "top_n": 15,
-    "portfolio": "score_weight",
+    "portfolio": "risk_parity",
     "max_stock_weight": 0.1,
     "target_volatility": 0.2,
     "holding_days": 20,
