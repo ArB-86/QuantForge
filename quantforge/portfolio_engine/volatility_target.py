@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 
 
 class VolatilityTarget:
@@ -14,20 +15,31 @@ class VolatilityTarget:
         self.lookback = lookback
         self.min_leverage = min_leverage
         self.max_leverage = max_leverage
+        self.last_leverage = None
 
     def apply(self, returns):
 
+        # Step 1: Volatility estimation with floor
         vol = (
             returns
-            .rolling(self.lookback)
+            .rolling(
+                self.lookback,
+                min_periods=self.lookback,
+            )
             .std()
+            .clip(lower=1e-4)
             * np.sqrt(252)
         )
 
+        # Step 2: Leverage calculation with smoothing
         leverage = (
             self.target_vol / vol
-        )
+        ).ewm(
+            span=5,
+            adjust=False,
+        ).mean()
 
+        # Clamp leverage
         leverage = leverage.clip(
             self.min_leverage,
             self.max_leverage,
@@ -35,4 +47,18 @@ class VolatilityTarget:
 
         leverage = leverage.fillna(1.0)
 
-        return returns * leverage
+        # ----- DEBUG: print leverage stats -----
+        print(
+            "Leverage:",
+            leverage.min(),
+            leverage.mean(),
+            leverage.max(),
+        )
+        # ---------------------------------------
+
+        # Step 3: Apply scaling and store diagnostics
+        scaled = returns * leverage
+
+        self.last_leverage = leverage
+
+        return scaled
