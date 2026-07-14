@@ -1,10 +1,12 @@
 import argparse
+import pandas as pd
 from pathlib import Path
 
 from quantforge.trainer.engine import train
 from quantforge.backtest_engine.engine import backtest
 from quantforge.core.config.config import Config
 from quantforge.research.shap_analysis import shap_analysis
+from quantforge.research.alpha_research import alpha_research
 
 
 def main():
@@ -81,10 +83,20 @@ def main():
     )
 
     # -------------------
-    # compare (NEW)
+    # compare
     # -------------------
 
     p = sub.add_parser("compare")
+    p.add_argument(
+        "--config",
+        required=True,
+    )
+
+    # -------------------
+    # alpha (NEW)
+    # -------------------
+
+    p = sub.add_parser("alpha")
     p.add_argument(
         "--config",
         required=True,
@@ -170,6 +182,11 @@ def main():
     elif args.command == "compare":
         from quantforge.research.portfolio_comparison import compare
         compare(args.config)
+
+    elif args.command == "alpha":
+        cfg = Config(args.config).dict()
+        df = pd.read_csv(cfg["checkpoint_file"])
+        alpha_research(df)
 
     elif args.command == "leaderboard":
         from quantforge.leaderboard.engine import Leaderboard
