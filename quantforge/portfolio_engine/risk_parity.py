@@ -1,9 +1,8 @@
 import numpy as np
 import pandas as pd
 
-from quantforge.portfolio_engine.optimizer import (
-    MinimumVarianceOptimizer,
-)
+from quantforge.portfolio_engine.optimizer import MinimumVarianceOptimizer
+from quantforge.portfolio_engine.covariance import CovarianceCache
 
 
 def build_risk_parity_portfolio(
@@ -13,82 +12,93 @@ def build_risk_parity_portfolio(
     top_n=10,
     max_weight=0.20,
     min_weight=0.02,
-    confidence_quantile=0.90,
+    confidence_quantile=0.80,
+    return_column="RETURN_1D",
+    lookback=252,
+    blend=0.35,
     **kwargs,
 ):
+    """
+    Risk parity portfolio with cached Ledoit-Wolf covariance estimation.
+    """
     portfolios = []
 
-    for date, g in df.groupby("Date"):
+    # Ensure we have a date column
+    df = df.copy()
+    df["Date"] = pd.to_datetime(df["Date"])
 
-        # Confidence filter (consistent with score_weight)
-        g = g[
-            g[score_column] > g[score_column].quantile(confidence_quantile)
-        ]
+    # ---- Use CovarianceCache ----
+    cov_cache = CovarianceCache(
+        df,
+        return_column=return_column,
+        lookback=lookback,
+    )
 
-        if len(g) == 0:
+    # Reuse optimizer
+    optimizer = MinimumVarianceOptimizer(
+        max_weight=max_weight,
+        min_weight=min_weight,
+    )
+
+    dates = np.sort(df["Date"].unique())
+
+    for i, date in enumerate(dates):
+        # Current date's universe
+        current = df[df["Date"] == date].copy()
+        if len(current) == 0:
             continue
 
-        picks = (
-            g.sort_values(
-                score_column,
-                ascending=False,
-            )
-            .head(top_n)
-            .copy()
+        # Confidence filter
+        current = current[current[score_column] > current[score_column].quantile(confidence_quantile)]
+        if len(current) == 0:
+            continue
+
+        # Select top N
+        picks = current.sort_values(score_column, ascending=False).head(top_n).copy()
+        n = len(picks)
+        if n == 0:
+            continue
+
+        # Get the tickers selected
+        tickers = picks["Ticker"].tolist()
+
+        # ---- Get covariance from cache ----
+        cov_matrix = cov_cache.get(
+            date,
+            tickers,
         )
 
-        # Build rolling historical return matrix
-        history = (
-            df[
-                (df["Ticker"].isin(picks["Ticker"])) &
-                (df["Date"] <= date)
-            ][["Date", "Ticker", "RETURN_1D"]]
-            .pivot(
-                index="Date",
-                columns="Ticker",
-                values="RETURN_1D",
-            )
-            .tail(60)
-        )
+        # Ensure covariance matrix is the correct size
+        if cov_matrix.shape != (n, n):
+            sigma = picks[volatility_column].fillna(picks[volatility_column].median()).clip(lower=1e-6).to_numpy(dtype=float)
+            corr = np.full((n, n), 0.15)
+            np.fill_diagonal(corr, 1.0)
+            cov_matrix = np.outer(sigma, sigma) * corr
 
-        if len(history) < 20:
-            # Fallback to diagonal covariance from volatility
-            vol = (
-                picks[volatility_column]
-                .fillna(picks[volatility_column].median())
-                .clip(lower=1e-6)
-            )
-            covariance = np.diag(np.square(vol.values))
+        # Optimize - always returns valid weights
+        weights = optimizer.optimize(cov_matrix)
+
+        # Convex blend with alpha
+        scores = picks[score_column].clip(lower=0)
+        vol = picks[volatility_column].fillna(picks[volatility_column].median()).clip(lower=1e-6)
+        alpha = scores / vol
+        if alpha.sum() > 0:
+            alpha = alpha / alpha.sum()
         else:
-            covariance = (
-                history
-                .fillna(0.0)
-                .cov()
-                .values
-            )
+            alpha = np.repeat(1 / n, n)
 
-        # Ensure no NaN/infinite values
-        covariance = np.nan_to_num(
-            covariance,
-            nan=0.0,
-            posinf=0.0,
-            neginf=0.0,
+        weights = (
+            blend * weights
+            + (1.0 - blend) * alpha
         )
-
-        optimizer = MinimumVarianceOptimizer(
-            max_weight=max_weight,
-            min_weight=min_weight,
-        )
-
-        weights = optimizer.optimize(
-            covariance
-        )
+        weights = weights / weights.sum()
+        weights = np.clip(weights, min_weight, max_weight)
+        weights = weights / weights.sum()
 
         picks["Weight"] = weights
-
         portfolios.append(picks)
 
-    return pd.concat(
-        portfolios,
-        ignore_index=True,
-    )
+    if portfolios:
+        return pd.concat(portfolios, ignore_index=True)
+    else:
+        return pd.DataFrame()

@@ -3,6 +3,7 @@ from pathlib import Path
 import pandas as pd
 
 from quantforge.features.registry import get_features
+from quantforge.features.store import FeatureStore
 
 
 class DatasetBuilder:
@@ -26,12 +27,12 @@ class DatasetBuilder:
     ):
 
         self.data_path = Path(data_path)
-        
+
         if isinstance(features, str):
             self.features = get_features(features)
         else:
             self.features = features
-        
+
         self.target = target
 
     def load(self):
@@ -75,6 +76,12 @@ class DatasetBuilder:
     def prepare(self):
 
         df = self.load()
+
+        print("=" * 80)
+        print("FEATURE ENGINEERING")
+        print("=" * 80)
+
+        df = FeatureStore().build(df)
 
         df = df.dropna(
             subset=self.features + [self.target]

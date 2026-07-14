@@ -4,6 +4,8 @@ from pathlib import Path
 from quantforge.trainer.engine import train
 from quantforge.backtest_engine.engine import backtest
 from quantforge.core.config.config import Config
+from quantforge.research.shap_analysis import shap_analysis
+
 
 def main():
 
@@ -43,7 +45,7 @@ def main():
     )
 
     # -------------------
-    # optimize (UPDATED)
+    # optimize
     # -------------------
 
     p = sub.add_parser("optimize")
@@ -63,6 +65,26 @@ def main():
     # -------------------
 
     p = sub.add_parser("experiment")
+    p.add_argument(
+        "--config",
+        required=True,
+    )
+
+    # -------------------
+    # shap
+    # -------------------
+
+    p = sub.add_parser("shap")
+    p.add_argument(
+        "--config",
+        required=True,
+    )
+
+    # -------------------
+    # compare (NEW)
+    # -------------------
+
+    p = sub.add_parser("compare")
     p.add_argument(
         "--config",
         required=True,
@@ -142,6 +164,13 @@ def main():
             for k, v in context.artifacts.items():
                 print(f"{k:20}: {v}")
 
+    elif args.command == "shap":
+        shap_analysis(args.config)
+
+    elif args.command == "compare":
+        from quantforge.research.portfolio_comparison import compare
+        compare(args.config)
+
     elif args.command == "leaderboard":
         from quantforge.leaderboard.engine import Leaderboard
 
@@ -157,7 +186,6 @@ def main():
             "score",
         ]
 
-        # Prepare formatted strings
         header = f"{'Rank':<5} {'ID':<5} {'Experiment':<30} {'Sharpe':<8} {'CAGR':<8} {'DD':<8} {'Win%':<8} {'Score':<8}"
         separator = "=" * len(header)
 
@@ -167,7 +195,7 @@ def main():
         print(separator)
 
         for rank, (_, row) in enumerate(df[cols].iterrows(), start=1):
-            name = row["name"][:28]  # truncate long names
+            name = row["name"][:28]
             print(
                 f"{rank:<5} "
                 f"{row['id']:<5} "

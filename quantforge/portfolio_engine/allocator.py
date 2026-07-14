@@ -1,3 +1,5 @@
+import inspect
+
 from quantforge.portfolio_engine.equal_weight import (
     build_equal_weight_portfolio,
 )
@@ -48,20 +50,27 @@ def build_portfolio(
         1.0,
     )
 
-    try:
+    allocator = ALLOCATORS.get(
+        method.lower()
+    )
 
-        portfolio = ALLOCATORS[
-            method.lower()
-        ](
-            df,
-            **kwargs,
-        )
-
-    except KeyError:
-
+    if allocator is None:
         raise ValueError(
             f"Unknown portfolio method: {method}"
         )
+
+    # ---- FILTER ARGUMENTS TO MATCH ALLOCATOR SIGNATURE ----
+    sig = inspect.signature(allocator)
+    filtered_kwargs = {
+        k: v
+        for k, v in kwargs.items()
+        if k in sig.parameters
+    }
+
+    portfolio = allocator(
+        df,
+        **filtered_kwargs,
+    )
 
     # Apply constraint after portfolio is built
     portfolio = PortfolioConstraints(

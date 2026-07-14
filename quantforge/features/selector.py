@@ -1,29 +1,19 @@
-TARGET_COLUMNS = {
-    "TARGET_1D",
-    "TARGET_5D_RETURN",
-    "TARGET_10D_RETURN",
-    "TARGET_20D_RETURN",
-    "TARGET_5D_CLASS",
-}
-
-EXCLUDE_COLUMNS = {
-    "Date",
-    "Ticker",
-}
+from quantforge.features.registry import get_features
 
 
-def get_training_features(df):
+def get_training_features(
+    df,
+    feature_store="v3",
+):
 
-    features = []
+    allowed = set(
+        get_features(feature_store)
+    )
 
-    for c in df.columns:
-
-        if c in TARGET_COLUMNS:
-            continue
-
-        if c in EXCLUDE_COLUMNS:
-            continue
-
-        features.append(c)
+    features = [
+        c
+        for c in df.columns
+        if c in allowed
+    ]
 
     return sorted(features)

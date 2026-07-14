@@ -6,7 +6,7 @@
     "checkpoint_file": "../data/checkpoints/monthly_walkforward_regression_v17.csv",
     "model_file": "../models/monthly_lightgbm_regressor_v17.pkl",
     "prediction_file": "../data/checkpoints/monthly_walkforward_regression_v17.csv",
-    "feature_store": "v3",
+    "feature_store": "v4",
     "top_n": 15,
     "portfolio": "risk_parity",
     "max_stock_weight": 0.1,
@@ -27,6 +27,6 @@
     "random_state": 42,
     "device": "gpu",
     "n_jobs": -1,
-    "features": "v3",
+    "features": "v4",
     "confidence_quantile": 0.9
 }

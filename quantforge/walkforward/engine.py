@@ -2,6 +2,7 @@ from quantforge.dataset.builder import DatasetBuilder
 from quantforge.training.model_manager import ModelManager
 from quantforge.walkforward.checkpoint import CheckpointManager
 from quantforge.walkforward.monthly import MonthlyLoop
+from quantforge.research.feature_importance import feature_importance
 
 
 class WalkForwardTrainer:
@@ -58,5 +59,10 @@ class WalkForwardTrainer:
         )
 
         loop.run()
+
+        feature_importance(
+            self.config["model_file"],
+            builder.features,
+        )
 
         return checkpoint
