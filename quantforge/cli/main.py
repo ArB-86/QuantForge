@@ -7,6 +7,8 @@ from quantforge.backtest_engine.engine import backtest
 from quantforge.core.config.config import Config
 from quantforge.research.shap_analysis import shap_analysis
 from quantforge.research.alpha_research import alpha_research
+from quantforge.cli.benchmark import benchmark
+from quantforge.research.report import ResearchReport
 
 
 def main():
@@ -71,6 +73,11 @@ def main():
         "--config",
         required=True,
     )
+    p.add_argument(
+        "--experiment",
+        default="baseline",
+        help="Experiment name from registry.",
+    )
 
     # -------------------
     # shap
@@ -93,13 +100,49 @@ def main():
     )
 
     # -------------------
-    # alpha (NEW)
+    # alpha
     # -------------------
 
     p = sub.add_parser("alpha")
     p.add_argument(
         "--config",
         required=True,
+    )
+
+    # -------------------
+    # benchmark
+    # -------------------
+
+    p = sub.add_parser("benchmark")
+    p.add_argument(
+        "--config",
+        required=True,
+    )
+    p.add_argument(
+        "--experiment",
+        default="baseline",
+        help="Experiment name from registry.",
+    )
+
+    # -------------------
+    # diagnostics
+    # -------------------
+
+    p = sub.add_parser("diagnostics")
+    p.add_argument(
+        "--config",
+        required=True,
+    )
+
+    # -------------------
+    # report (NEW)
+    # -------------------
+
+    p = sub.add_parser("report")
+    p.add_argument(
+        "--results",
+        default="results/experiments",
+        help="Directory containing experiment JSON files.",
     )
 
     # -------------------
@@ -152,7 +195,9 @@ def main():
     elif args.command == "experiment":
         from quantforge.research_pipeline.runner import ExperimentRunner
 
-        context = ExperimentRunner(args.config).run()
+        context = ExperimentRunner(args.config).run(
+            experiment=args.experiment,
+        )
 
         print()
         print("=" * 80)
@@ -185,8 +230,19 @@ def main():
 
     elif args.command == "alpha":
         cfg = Config(args.config).dict()
-        df = pd.read_csv(cfg["checkpoint_file"])
+        df = pd.read_csv(cfg["checkpoint_file"], low_memory=False)
         alpha_research(df)
+
+    elif args.command == "benchmark":
+        benchmark(args.config, args.experiment)
+
+    elif args.command == "diagnostics":
+        from quantforge.cli.diagnostics import diagnostics
+        diagnostics(args.config)
+
+    elif args.command == "report":
+        report = ResearchReport(args.results)
+        report.run()
 
     elif args.command == "leaderboard":
         from quantforge.leaderboard.engine import Leaderboard

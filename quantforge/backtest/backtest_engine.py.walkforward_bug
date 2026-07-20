@@ -12,6 +12,7 @@ from quantforge.portfolio_engine.volatility_target import (
 
 from quantforge.backtest.simulator import simulate
 from quantforge.backtest.metrics import evaluate
+from quantforge.prediction.prediction_engine import PredictionEngine
 
 
 class BacktestEngine:
@@ -22,29 +23,28 @@ class BacktestEngine:
 
     def load_predictions(self):
 
-        path = Path(self.config["prediction_file"])
+        df = pd.read_csv(
+            Path(
+                self.config["prediction_file"]
+            )
+        )
 
-        if path.suffix == ".parquet":
-            df = pd.read_parquet(path)
-        else:
-            df = pd.read_csv(path, low_memory=False)
-
-        df["Date"] = pd.to_datetime(df["Date"])
+        df["Date"] = pd.to_datetime(
+            df["Date"]
+        )
 
         return df
 
     def run(self):
 
-        if "predictions_df" in self.config:
-            predictions = self.config["predictions_df"].copy()
-        else:
-            predictions = self.load_predictions()
+        predictions = self.load_predictions()
 
-        if "PRED_RETURN" not in predictions.columns:
-            raise ValueError(
-                "Prediction file does not contain PRED_RETURN. "
-                "Run walk-forward training first."
-            )
+        # Use PredictionEngine instead of direct model prediction
+        engine = PredictionEngine(
+            self.config["prediction"]
+        )
+        pred = engine.predict(predictions)
+        predictions["PRED_RETURN"] = pred
 
         portfolio = build_portfolio(
 
@@ -83,6 +83,7 @@ class BacktestEngine:
 
         )
 
+        # Apply volatility targeting to the portfolio returns
         portfolio["Return"] = VolatilityTarget(
             target_vol=self.config.get(
                 "target_volatility",
@@ -92,6 +93,7 @@ class BacktestEngine:
             portfolio["Return"]
         )
 
+        # Recalculate equity curve with volatility-targeted returns
         portfolio["Equity"] = (
             1 + portfolio["Return"]
         ).cumprod()

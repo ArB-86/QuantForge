@@ -1,11 +1,12 @@
 {
-    "name": "LightGBM Regression",
+    "name": "LightGBM Baseline",
+    "experiment": "baseline",
     "model": "lightgbm",
     "target": "TARGET_20D_RETURN",
     "data_path": "../data/training/master_v9.parquet",
-    "checkpoint_file": "../data/checkpoints/monthly_walkforward_progress_v17.csv",
-    "model_file": "../models/monthly_lightgbm_regressor_v17.pkl",
-    "prediction_file": "../data/checkpoints/monthly_walkforward_regression_v17.csv",
+    "checkpoint_file": "../data/checkpoints/baseline.csv",
+    "model_file": "../models/baseline.pkl",
+    "prediction_file": "../data/checkpoints/baseline.csv",
     "feature_store": "v4",
     "top_n": 15,
     "portfolio": "risk_parity",
@@ -27,13 +28,12 @@
     "random_state": 42,
     "device": "gpu",
     "n_jobs": -1,
-    "num_threads": 32,
     "features": "v4",
     "confidence_quantile": 0.9,
     "prediction": {
         "ensemble_method": "rank_average",
         "models": {
-            "lightgbm": "../models/monthly_lightgbm_regressor_v17.pkl"
+            "lightgbm": "../models/baseline.pkl"
         }
     }
 }

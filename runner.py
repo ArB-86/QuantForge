@@ -1,20 +1,23 @@
 from quantforge.research_pipeline.context import ExperimentContext
 from quantforge.trainer.engine import train
 from quantforge.backtest_engine.engine import backtest
-from quantforge.artifacts import ArtifactManager
+from quantforge.artifacts.versioning import ArtifactManager
 from quantforge.experiment.metrics import MetricsManager
 from quantforge.research_pipeline.validation import ValidationManager
+from quantforge.experiment.manager import ExperimentManager
 from quantforge.core.config.config import Config
 from quantforge.storage.database.logger import ExperimentLogger
 from quantforge.automl.objectives import portfolio_objective
-from quantforge.experiment.registry import apply_experiment
+from quantforge.experiment.registry import apply_experiment  # new import
 
 
 class ExperimentRunner:
 
     def __init__(self, config):
+        # Convert config to dictionary if it's a string path
         if isinstance(config, str):
             config = Config(config).dict()
+
         self.config = config
 
     def run(
@@ -22,45 +25,40 @@ class ExperimentRunner:
         experiment="baseline",
     ):
 
-        # Apply experiment overrides
+        # Apply experiment overrides to config
         self.config = apply_experiment(
             self.config,
             experiment,
         )
 
-        # ---- Artifact Manager ----
-        artifact_mgr = ArtifactManager(
-            root="results/experiments",
-            experiment=experiment,
+        manager = ExperimentManager(
+            self.config.get(
+                "config_file",
+                "configs/lightgbm_regressor.json",
+            )
         )
-        artifact_mgr.save_config(self.config)
 
-        # ---- Create context ----
+        experiment_id, experiment_dir = manager.create()
+
         context = ExperimentContext()
-        context.experiment_id = f"EXP_{artifact_mgr.timestamp}"
+
+        context.experiment_id = experiment_id
         context.config = self.config
         context.status = "RUNNING"
 
-        # ---- Set both keys for compatibility ----
-        context.artifacts["experiment_dir"] = str(artifact_mgr.run_dir)
-        context.artifacts["run_dir"] = str(artifact_mgr.run_dir)   # backward compatibility
-
-        # ---- Update config to use ArtifactManager paths ----
-        self.config["model_file"] = str(artifact_mgr.model_file())
-        self.config["prediction_file"] = str(artifact_mgr.prediction_file())
-        self.config["checkpoint_file"] = str(artifact_mgr.checkpoint_file())
+        context.artifacts["experiment_dir"] = str(experiment_dir)
 
         # Train the model
         checkpoint = train(self.config)
-        import pandas as pd
-        self.config["predictions_df"] = pd.read_parquet(self.config["prediction_file"])
 
-        # Run backtest
+        # Run backtest on the trained model
         portfolio, metrics = backtest(self.config)
 
+        # Store backtest results in context
         context.portfolio = portfolio
         context.metrics = metrics
 
+        # Store serializable metadata in the context
         context.artifacts["checkpoint"] = self.config["checkpoint_file"]
         context.artifacts["model"] = self.config["model_file"]
 
@@ -68,19 +66,23 @@ class ExperimentRunner:
         context.target = self.config["target"]
         context.feature_names = self.config["features"]
 
+        # Validate the experiment (single call)
         ValidationManager(context).validate()
 
+        # Calculate portfolio objective score
         score = portfolio_objective(metrics)
         metrics["Score"] = score
 
+        # Log experiment to database
         logger = ExperimentLogger()
-        logger.log(self.config, metrics, score)
+        logger.log(
+            self.config,
+            metrics,
+            score,
+        )
 
         MetricsManager(context).save()
-        artifact_mgr.save_metrics(metrics)
-
-        # Save additional artifacts
-        portfolio.to_parquet(artifact_mgr.portfolio_file())
+        ArtifactManager(context).save()
 
         context.status = "COMPLETED"
 

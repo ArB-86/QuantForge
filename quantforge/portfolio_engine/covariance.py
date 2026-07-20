@@ -47,10 +47,22 @@ class CovarianceCache:
             )
         ]
 
-        pivot = history.pivot(
+        # ---- Remove duplicates before pivoting ----
+        history = (
+            history
+            .sort_values("Date")
+            .drop_duplicates(
+                subset=["Date", "Ticker"],
+                keep="last",
+            )
+        )
+
+        # ---- Use pivot_table to handle any remaining duplicates gracefully ----
+        pivot = history.pivot_table(
             index="Date",
             columns="Ticker",
             values=self.return_column,
+            aggfunc="last",
         )
 
         history = pivot.tail(

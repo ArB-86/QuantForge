@@ -3,6 +3,7 @@ from quantforge.training.model_manager import ModelManager
 from quantforge.walkforward.checkpoint import CheckpointManager
 from quantforge.walkforward.monthly import MonthlyLoop
 from quantforge.research.feature_importance import feature_importance
+from quantforge.features.registry import get_features
 
 
 class WalkForwardTrainer:
@@ -13,11 +14,15 @@ class WalkForwardTrainer:
 
     def run(self):
 
+        # Get feature set from config
+        feature_set = self.config.get("feature_set", "v4")
+        features = get_features(feature_set)
+
         builder = DatasetBuilder(
 
             self.config["data_path"],
 
-            self.config["features"],
+            features,
 
             self.config["target"],
 
@@ -43,13 +48,15 @@ class WalkForwardTrainer:
 
             df=df,
 
-            features=builder.features,   # <-- use the resolved list, not config string
+            features=builder.features,
 
             target=self.config["target"],
 
             model_manager=model_manager,
 
             checkpoint_manager=checkpoint,
+
+            prediction_file=self.config["prediction_file"],  # pass prediction file
 
             purge_days=self.config.get(
                 "purge_days",

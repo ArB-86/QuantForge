@@ -10,14 +10,22 @@ def add_volatility_features(df):
         ) / (4 * np.log(2))
     )
 
-    # Garman-Klass Volatility
+    # Garman-Klass Volatility (with clipping to avoid negative variance)
     log_hl = np.log(df["High"] / df["Low"])
     log_co = np.log(df["Close"] / df["Open"])
 
-    df["GARMAN_KLASS_VOL"] = np.sqrt(
+    variance = (
         0.5 * log_hl**2
         - (2 * np.log(2) - 1) * log_co**2
     )
+
+    variance = np.clip(
+        variance,
+        a_min=0.0,
+        a_max=None,
+    )
+
+    df["GARMAN_KLASS_VOL"] = np.sqrt(variance)
 
     # Daily Range
     df["TRUE_RANGE"] = (

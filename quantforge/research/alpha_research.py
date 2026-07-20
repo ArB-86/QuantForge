@@ -17,7 +17,7 @@ def alpha_research(
         str,
     ):
 
-        df = pd.read_csv(dataset)
+        df = pd.read_csv(dataset, low_memory=False)
 
     else:
 

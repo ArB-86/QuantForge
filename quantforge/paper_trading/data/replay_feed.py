@@ -7,7 +7,7 @@ class ReplayFeed:
 
     @classmethod
     def from_csv(cls, path):
-        return cls(pd.read_csv(path))
+        return cls(pd.read_csv(path, low_memory=False))
 
     def __iter__(self):
         for date, frame in self.df.groupby("Date"):

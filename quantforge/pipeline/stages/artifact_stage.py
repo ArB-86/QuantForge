@@ -1,4 +1,4 @@
-from quantforge.research.artifact_manager import ArtifactManager
+from quantforge.artifacts import ArtifactManager
 
 
 class ArtifactStage:

@@ -5,7 +5,7 @@ import pandas as pd
 class CSVDataFeed:
 
     def __init__(self, csv_file):
-        self.df = pd.read_csv(csv_file)
+        self.df = pd.read_csv(csv_file, low_memory=False)
 
         if "Date" in self.df.columns:
             self.df["Date"] = pd.to_datetime(self.df["Date"])
