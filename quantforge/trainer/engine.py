@@ -2,8 +2,7 @@ from quantforge.core.config.config import Config
 from quantforge.walkforward.engine import WalkForwardTrainer
 
 
-def train(config):
-
+def train(config, skip_feature_importance=False, dashboard=None):
     if isinstance(config, str):
         config = Config(config).dict()
 
@@ -11,6 +10,5 @@ def train(config):
     print("TRAINING")
     print("=" * 80)
 
-    trainer = WalkForwardTrainer(config)
-
+    trainer = WalkForwardTrainer(config, skip_feature_importance=skip_feature_importance, dashboard=dashboard)
     return trainer.run()

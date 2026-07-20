@@ -27,10 +27,8 @@ class CheckpointManager:
         self._buffer.clear()
 
     def save(self, model, date, train_dates, test_dates):
-        # Save model (overwrite)
         joblib.dump(model, self.model_file)
 
-        # Store checkpoint metadata in buffer
         train_start, train_end = train_dates
         test_start, test_end = test_dates
         self._buffer.append({
@@ -41,7 +39,6 @@ class CheckpointManager:
             'Test_End': test_end,
         })
 
-        # Flush if buffer size exceeds interval
         if len(self._buffer) >= self.flush_interval:
             self._flush()
 
@@ -63,6 +60,4 @@ class CheckpointManager:
         return {pd.Timestamp(x) for x in df['Date']}
 
     def finalize(self):
-        """Call this at the end of the run to flush any remaining buffer."""
         self._flush()
-def finalize(self): self._flush()

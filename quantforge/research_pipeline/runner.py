@@ -1,3 +1,7 @@
+from pathlib import Path
+import pandas as pd
+import time
+
 from quantforge.research_pipeline.context import ExperimentContext
 from quantforge.trainer.engine import train
 from quantforge.backtest_engine.engine import backtest
@@ -7,7 +11,8 @@ from quantforge.research_pipeline.validation import ValidationManager
 from quantforge.core.config.config import Config
 from quantforge.storage.database.logger import ExperimentLogger
 from quantforge.automl.objectives import portfolio_objective
-from quantforge.experiment.registry import apply_experiment
+from quantforge.experiment.registry import apply_experiment, get_experiment_type
+from quantforge.research.runtime_dashboard import RuntimeDashboard
 
 
 class ExperimentRunner:
@@ -35,28 +40,46 @@ class ExperimentRunner:
         )
         artifact_mgr.save_config(self.config)
 
+        # ---- Dashboard ----
+        dashboard = RuntimeDashboard(artifact_mgr.run_dir)
+        dashboard.start_timer("total")
+
         # ---- Create context ----
         context = ExperimentContext()
         context.experiment_id = f"EXP_{artifact_mgr.timestamp}"
         context.config = self.config
         context.status = "RUNNING"
 
-        # ---- Set both keys for compatibility ----
         context.artifacts["experiment_dir"] = str(artifact_mgr.run_dir)
-        context.artifacts["run_dir"] = str(artifact_mgr.run_dir)   # backward compatibility
+        context.artifacts["run_dir"] = str(artifact_mgr.run_dir)
 
-        # ---- Update config to use ArtifactManager paths ----
-        self.config["model_file"] = str(artifact_mgr.model_file())
-        self.config["prediction_file"] = str(artifact_mgr.prediction_file())
-        self.config["checkpoint_file"] = str(artifact_mgr.checkpoint_file())
+        # ---- Determine experiment type ----
+        exp_type = get_experiment_type(experiment)
 
-        # Train the model
-        checkpoint = train(self.config)
-        import pandas as pd
-        self.config["predictions_df"] = pd.read_parquet(self.config["prediction_file"])
+        # ---- Prediction reuse ----
+        pred_path = Path(self.config["prediction_file"])
 
-        # Run backtest
+        if exp_type == "portfolio" and pred_path.exists():
+            print("=" * 80)
+            print(f"[{experiment}] Using existing predictions from {pred_path}")
+            print("=" * 80)
+            self.config["predictions_df"] = pd.read_parquet(pred_path)
+            dashboard.record("training_skipped", True)
+        else:
+            print("=" * 80)
+            print(f"[{experiment}] Training model and generating predictions")
+            print("=" * 80)
+            skip_feature_importance = (exp_type == "portfolio")
+            dashboard.record("training_skipped", False)
+            checkpoint = train(self.config, skip_feature_importance=skip_feature_importance, dashboard=dashboard)
+
+            if pred_path.exists():
+                self.config["predictions_df"] = pd.read_parquet(pred_path)
+
+        # ---- Backtest ----
+        dashboard.start_timer("backtest")
         portfolio, metrics = backtest(self.config)
+        dashboard.stop_timer("backtest")
 
         context.portfolio = portfolio
         context.metrics = metrics
@@ -79,9 +102,43 @@ class ExperimentRunner:
         MetricsManager(context).save()
         artifact_mgr.save_metrics(metrics)
 
-        # Save additional artifacts
         portfolio.to_parquet(artifact_mgr.portfolio_file())
 
         context.status = "COMPLETED"
 
+        dashboard.stop_timer("total")
+        dashboard.save()
+
         return context
+        from quantforge.research.runtime_dashboard import RuntimeDashboard
+        self.dashboard = RuntimeDashboard(artifact_mgr.run_dir)
+        self.dashboard.start_timer("total")
+
+        # ... (existing code) ...
+
+        # When calling train, pass dashboard
+        if exp_type == "portfolio" and pred_path.exists():
+            ...
+        else:
+            checkpoint = train(self.config, skip_feature_importance=skip_feature_importance, dashboard=self.dashboard)
+
+        # ... after backtest ...
+        self.dashboard.stop_timer("total")
+        self.dashboard.record("backtest_seconds", backtest_time)  # need to measure backtest time
+        self.dashboard.save()
+        from quantforge.research.runtime_dashboard import RuntimeDashboard
+        self.dashboard = RuntimeDashboard(artifact_mgr.run_dir)
+        self.dashboard.start_timer("total")
+
+        # ... (existing code) ...
+
+        # When calling train, pass dashboard
+        if exp_type == "portfolio" and pred_path.exists():
+            ...
+        else:
+            checkpoint = train(self.config, skip_feature_importance=skip_feature_importance, dashboard=self.dashboard)
+
+        # ... after backtest ...
+        self.dashboard.stop_timer("total")
+        self.dashboard.record("backtest_seconds", backtest_time)  # need to measure backtest time
+        self.dashboard.save()

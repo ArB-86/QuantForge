@@ -23,10 +23,8 @@ def add_momentum_features(df):
         df["RETURN_120D"]
     )
 
-    df["ACCELERATION"] = (
-        df["RETURN_20D"] -
-        df["RETURN_5D"]
-    )
+    # ACCELERATION is exactly MOM_20_5 – reuse
+    df["ACCELERATION"] = df["MOM_20_5"]
 
     df["LONG_ACCELERATION"] = (
         df["RETURN_120D"] -

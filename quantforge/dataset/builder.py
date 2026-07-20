@@ -89,7 +89,15 @@ class DatasetBuilder:
         print("FEATURE ENGINEERING")
         print("=" * 80)
 
-        df = FeatureStore().build(df)
+        df = FeatureStore().load_or_build(df)
+
+        # ---- Bulk dtype downcasting ----
+        float_cols = df.select_dtypes(include=['float64']).columns
+        if len(float_cols):
+            df[float_cols] = df[float_cols].astype('float32')
+        int_cols = df.select_dtypes(include=['int64']).columns
+        if len(int_cols):
+            df[int_cols] = df[int_cols].astype('int32')
 
         df = df.dropna(subset=self.features + [self.target])
 

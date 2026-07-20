@@ -8,7 +8,6 @@ from quantforge.core.config.config import Config
 from quantforge.research.shap_analysis import shap_analysis
 from quantforge.research.alpha_research import alpha_research
 from quantforge.cli.benchmark import benchmark
-from quantforge.research.report import ResearchReport
 
 
 def main():
@@ -110,6 +109,16 @@ def main():
     )
 
     # -------------------
+    # build-features (NEW)
+    # -------------------
+
+    p = sub.add_parser("build-features")
+    p.add_argument(
+        "--config",
+        required=True,
+    )
+
+    # -------------------
     # benchmark
     # -------------------
 
@@ -135,7 +144,7 @@ def main():
     )
 
     # -------------------
-    # report (NEW)
+    # report
     # -------------------
 
     p = sub.add_parser("report")
@@ -230,8 +239,19 @@ def main():
 
     elif args.command == "alpha":
         cfg = Config(args.config).dict()
-        df = pd.read_csv(cfg["checkpoint_file"], low_memory=False)
+        df = pd.read_csv(cfg["checkpoint_file"])
         alpha_research(df)
+
+    elif args.command == "build-features":
+        from quantforge.core.config.config import Config
+        from quantforge.dataset.builder import DatasetBuilder
+        cfg = Config(args.config).dict()
+        builder = DatasetBuilder(
+            data_path=cfg["data_path"],
+            features=cfg["features"],
+            target=cfg["target"],
+        )
+        builder.prepare()
 
     elif args.command == "benchmark":
         benchmark(args.config, args.experiment)
@@ -241,6 +261,7 @@ def main():
         diagnostics(args.config)
 
     elif args.command == "report":
+        from quantforge.research.report import ResearchReport
         report = ResearchReport(args.results)
         report.run()
 
