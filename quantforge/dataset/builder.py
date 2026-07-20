@@ -68,7 +68,7 @@ class DatasetBuilder:
 
         print(f"Dataset loaded in {time.perf_counter()-t0:.2f} seconds")
         df["Date"] = pd.to_datetime(df["Date"])
-        df = df.sort_values(["Date", "Ticker"]).reset_index(drop=True)
+        df = df.sort_values(["Date", "Ticker"], kind="mergesort").reset_index(drop=True)
 
         # Memory optimization: convert Ticker to categorical
         df["Ticker"] = df["Ticker"].astype("category")

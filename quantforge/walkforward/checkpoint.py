@@ -65,3 +65,4 @@ class CheckpointManager:
     def finalize(self):
         """Call this at the end of the run to flush any remaining buffer."""
         self._flush()
+def finalize(self): self._flush()

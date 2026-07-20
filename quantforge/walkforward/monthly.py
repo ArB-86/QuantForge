@@ -36,11 +36,10 @@ def _run_single_fold(fold_data):
     test_pred = test[['Date', 'Ticker', target, 'RETURN_1D', 'VOL_20D']].copy()
     test_pred['PRED_RETURN'] = pred_series
 
-    # Return predictions and checkpoint info
     return {
         "date": date,
         "predictions": test_pred,
-        "model": model,  # not pickled? We'll avoid pickling model.
+        "model": model,
     }
 
 
@@ -63,7 +62,11 @@ class MonthlyLoop:
         step=20,
         workers=8,
     ):
+        # Sort and set index once
         self.df = df.copy()
+        self.df = self.df.sort_values(["Date", "Ticker"], kind="mergesort")
+        self.df = self.df.set_index("Date", drop=False)
+
         self.features = features
         self.target = target
         self.model_manager = model_manager
@@ -77,7 +80,10 @@ class MonthlyLoop:
 
         self.prediction_file.parent.mkdir(parents=True, exist_ok=True)
 
-        # Store model config separately for workers
+        # Cache unique dates once
+        self.dates = self.df["Date"].drop_duplicates().sort_values().to_numpy()
+
+        # Model config for workers
         self.model_config = {
             k: v for k, v in model_manager.config.items()
             if k not in ["data_path", "prediction_file", "checkpoint_file"]
@@ -98,19 +104,16 @@ class MonthlyLoop:
         out_dir.mkdir(parents=True, exist_ok=True)
 
         fname = out_dir / f"pred_{pd.Timestamp(date).strftime('%Y%m%d')}.parquet"
-        predictions.to_parquet(compression="zstd", fname, index=False)
+        predictions.to_parquet(fname, index=False, compression="zstd")
 
     def _merge_predictions(self):
         files = sorted(self.prediction_file.parent.glob("pred_*.parquet"))
         if not files:
             return
         df = pd.concat((pd.read_parquet(f) for f in files), ignore_index=True)
-        df.to_parquet(compression="zstd", self.prediction_file, index=False)
+        df.to_parquet(self.prediction_file, index=False, compression="zstd")
 
     def run(self):
-        dates = self.df["Date"].unique()
-        dates = sorted(dates)
-
         completed = self.checkpoint_manager.get_completed_dates()
         if completed:
             print("=" * 80)
@@ -121,19 +124,19 @@ class MonthlyLoop:
 
         # Prepare folds
         folds = []
-        for i in range(start_idx, len(dates), self.step):
-            date = dates[i]
+        for i in range(start_idx, len(self.dates), self.step):
+            date = self.dates[i]
             if pd.Timestamp(date) in completed:
                 print(f"Skipping {pd.Timestamp(date).date()} (already completed)")
                 continue
 
             train_start, train_end, test_start, test_end = self._split_date(date)
 
-            train_mask = (self.df["Date"] >= train_start) & (self.df["Date"] <= train_end)
-            test_mask = (self.df["Date"] >= test_start) & (self.df["Date"] <= test_end)
+            # Use DateIndex slicing instead of boolean masks
+            train = self.df.loc[train_start:train_end].copy()
+            test = self.df.loc[test_start:test_end].copy()
 
-            train = self.df[train_mask].copy()
-            test = self.df[test_mask].copy()
+            # Drop rows with NaN features in test set
             test = test.dropna(subset=self.features)
 
             if len(train) == 0 or len(test) == 0:
@@ -162,24 +165,13 @@ class MonthlyLoop:
                 result = future.result()
                 date = result["date"]
                 predictions = result["predictions"]
-                # Save per-date predictions
                 self._save_predictions(date, predictions)
 
         # Merge all per-date predictions
         self._merge_predictions()
 
-        # Save checkpoints (simple version: just record date)
-        # Since we don't have the model object, we'll save a dummy checkpoint.
-        # This is only for resume; we can check prediction files instead.
-        # We'll just mark the dates as completed by writing a checkpoint file.
-        # But we can rely on the prediction files for resume, so we can skip checkpoint.
-        # For compatibility, we'll write a minimal checkpoint file.
-        for fold in folds:
-            date = fold["date"]
-            # We don't have the model, but we can save a placeholder.
-            # The checkpoint manager expects a model, but we can pass None.
-            # We'll modify checkpoint manager to accept None.
-            pass
+        # Finalize checkpoint manager
+        self.checkpoint_manager.finalize()
 
         print("Walk-forward monthly loop completed.")
         return self.checkpoint_manager
