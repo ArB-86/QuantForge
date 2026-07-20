@@ -38,6 +38,13 @@ class ExperimentRunner:
             root="results/experiments",
             experiment=experiment,
         )
+
+        # ---- Update config with artifact paths BEFORE saving ----
+        self.config["model_file"] = str(artifact_mgr.model_file())
+        self.config["prediction_file"] = str(artifact_mgr.prediction_file())
+        self.config["checkpoint_file"] = str(artifact_mgr.checkpoint_file())
+
+        # ---- Now save the config (with correct paths) ----
         artifact_mgr.save_config(self.config)
 
         # ---- Dashboard ----
@@ -110,35 +117,3 @@ class ExperimentRunner:
         dashboard.save()
 
         return context
-        from quantforge.research.runtime_dashboard import RuntimeDashboard
-        self.dashboard = RuntimeDashboard(artifact_mgr.run_dir)
-        self.dashboard.start_timer("total")
-
-        # ... (existing code) ...
-
-        # When calling train, pass dashboard
-        if exp_type == "portfolio" and pred_path.exists():
-            ...
-        else:
-            checkpoint = train(self.config, skip_feature_importance=skip_feature_importance, dashboard=self.dashboard)
-
-        # ... after backtest ...
-        self.dashboard.stop_timer("total")
-        self.dashboard.record("backtest_seconds", backtest_time)  # need to measure backtest time
-        self.dashboard.save()
-        from quantforge.research.runtime_dashboard import RuntimeDashboard
-        self.dashboard = RuntimeDashboard(artifact_mgr.run_dir)
-        self.dashboard.start_timer("total")
-
-        # ... (existing code) ...
-
-        # When calling train, pass dashboard
-        if exp_type == "portfolio" and pred_path.exists():
-            ...
-        else:
-            checkpoint = train(self.config, skip_feature_importance=skip_feature_importance, dashboard=self.dashboard)
-
-        # ... after backtest ...
-        self.dashboard.stop_timer("total")
-        self.dashboard.record("backtest_seconds", backtest_time)  # need to measure backtest time
-        self.dashboard.save()

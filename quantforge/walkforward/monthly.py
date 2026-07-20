@@ -6,7 +6,7 @@ import time
 import gc
 import threading
 import queue
-from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor, as_completed
+from concurrent.futures import ProcessPoolExecutor, as_completed
 import os
 
 from quantforge.training.model_manager import ModelManager
@@ -14,10 +14,6 @@ from quantforge.walkforward.checkpoint import CheckpointManager
 
 
 def _train_fold_worker(fold_data):
-    """
-    Worker function: trains on a fold using shared NumPy arrays.
-    Input: dict with train_idx, test_idx, date, feature_matrix, target_vector, model_config, features, target, test_df
-    """
     date = fold_data["date"]
     train_idx = fold_data["train_idx"]
     test_idx = fold_data["test_idx"]
@@ -26,7 +22,7 @@ def _train_fold_worker(fold_data):
     model_config = fold_data["model_config"]
     features = fold_data["features"]
     target = fold_data["target"]
-    test_df = fold_data["test_df"]  # contains Date, Ticker, target, etc.
+    test_df = fold_data["test_df"]
 
     X_train = feature_matrix[train_idx]
     y_train = target_vector[train_idx]
@@ -48,10 +44,6 @@ def _train_fold_worker(fold_data):
 
 
 class MonthlyLoop:
-    """
-    Monthly walk-forward training loop with shared-memory optimizations.
-    """
-
     def __init__(
         self,
         df,
@@ -65,8 +57,8 @@ class MonthlyLoop:
         test_length=20,
         step=20,
         workers=8,
+        dashboard=None,
     ):
-        # Store a flat copy without setting index
         self.df = df.copy()
         self.df = self.df.sort_values(["Date", "Ticker"], kind="mergesort").reset_index(drop=True)
 
@@ -80,30 +72,31 @@ class MonthlyLoop:
         self.test_length = test_length
         self.step = step
         self.workers = workers
+        self.dashboard = dashboard
 
         self.prediction_file.parent.mkdir(parents=True, exist_ok=True)
 
-        # Pre-compute unique dates
-        self.dates = self.df["Date"].drop_duplicates().sort_values().to_numpy()
+        self.dates = [
+            pd.Timestamp(x)
+            for x in self.df["Date"].drop_duplicates().sort_values().to_numpy()
+        ]
 
-        # ---- Shared memory: convert to NumPy once ----
         self.feature_matrix = self.df[self.features].to_numpy(dtype=np.float32, copy=False)
         self.target_vector = self.df[self.target].to_numpy(dtype=np.float32, copy=False)
 
-        # We'll also keep the full DataFrame for test_df extraction
+        # Keep only necessary columns for the test_df
         self.df_for_test = self.df[['Date', 'Ticker', self.target, 'RETURN_1D', 'VOL_20D']].copy()
 
-        # Model config for workers (without large objects)
         self.model_config = {
             k: v for k, v in model_manager.config.items()
             if k not in ["data_path", "prediction_file", "checkpoint_file"]
         }
 
-        # Background writer queue
         self.save_queue = queue.Queue()
         self.writer_thread = None
 
     def _split_date(self, date):
+        date = pd.Timestamp(date)
         train_start = date - timedelta(days=self.train_length)
         train_end = date - timedelta(days=1)
         test_start = date
@@ -113,10 +106,8 @@ class MonthlyLoop:
     def _save_predictions(self, date, predictions):
         predictions = predictions.copy()
         predictions["Date"] = date
-
         out_dir = self.prediction_file.parent
         out_dir.mkdir(parents=True, exist_ok=True)
-
         fname = out_dir / f"pred_{pd.Timestamp(date).strftime('%Y%m%d')}.parquet"
         predictions.to_parquet(fname, index=False, compression="zstd")
 
@@ -124,7 +115,6 @@ class MonthlyLoop:
         files = sorted(self.prediction_file.parent.glob("pred_*.parquet"))
         if not files:
             return
-        # Use incremental merge to avoid loading all files at once
         merged = None
         for f in files:
             df = pd.read_parquet(f)
@@ -136,16 +126,17 @@ class MonthlyLoop:
             merged.to_parquet(self.prediction_file, index=False, compression="zstd")
 
     def _writer_worker(self):
-        """Background thread to save predictions."""
         while True:
             item = self.save_queue.get()
-            if item is None:  # sentinel to stop
+            if item is None:
                 break
             date, predictions = item
             self._save_predictions(date, predictions)
 
     def run(self):
-        # Start background writer thread
+        if self.dashboard:
+            self.dashboard.start_timer("walkforward")
+
         self.writer_thread = threading.Thread(target=self._writer_worker, daemon=True)
         self.writer_thread.start()
 
@@ -157,7 +148,6 @@ class MonthlyLoop:
 
         start_idx = self.train_length + self.test_length
 
-        # Prepare fold data as list of (date, train_mask, test_mask)
         folds = []
         for i in range(start_idx, len(self.dates), self.step):
             date = self.dates[i]
@@ -168,7 +158,6 @@ class MonthlyLoop:
 
             train_start, train_end, test_start, test_end = self._split_date(date)
 
-            # Boolean masks
             train_mask = (
                 (self.df["Date"] >= train_start) &
                 (self.df["Date"] <= train_end)
@@ -178,39 +167,24 @@ class MonthlyLoop:
                 (self.df["Date"] <= test_end)
             )
 
-            # Get indices
             train_idx = np.where(train_mask.to_numpy())[0]
             test_idx = np.where(test_mask.to_numpy())[0]
 
-            # Drop NaN in test features: we need to filter test_idx further
-            # Instead, we'll filter the test DataFrame directly.
-            # For simplicity, we'll use the entire test_idx and let the worker handle it.
-            # But we need to pass the test DataFrame.
-            # We'll pass a small copy of test_df for the worker.
+            # ---- Filter test rows with NaN features ----
+            feature_block = self.feature_matrix[test_idx]
+            valid_mask = ~np.isnan(feature_block).any(axis=1)
+            test_idx = test_idx[valid_mask]
+
+            if len(test_idx) == 0:
+                continue
+
             test_df = self.df_for_test.iloc[test_idx].copy()
-            test_df = test_df.dropna(subset=self.features)
+            test_indices = test_idx
 
-            # Update indices after dropna
-            # We need to realign with the original test_idx: we can just pass the filtered test_df.
-            # For the worker, we'll send test_df as is (it's small).
-            # And we'll send train_idx and test_idx (full) but then filter in worker.
-            # Actually, the worker should use the filtered test_df's indices relative to the full feature_matrix.
-            # Simpler: we'll pass the test_df directly and the worker uses it.
-
-            # We'll pass test_df, and also pass train_idx and test_idx (before filtering)
-            # The worker will filter test_idx based on test_df's rows? That's messy.
-            # Better: in the worker, we'll use the test_df's index to slice feature_matrix.
-            # We'll pass test_df's index, but feature_matrix is aligned with self.df index.
-            # So we need to pass the original indices of test_df rows.
-            test_indices = test_df.index.values
-            train_indices = train_idx
-
-            # Since test_df is a subset, we can pass its index.
-            # And also the full feature_matrix.
             folds.append({
                 "date": date,
-                "train_idx": train_indices,
-                "test_idx": test_indices,  # indices in the original df
+                "train_idx": train_idx,
+                "test_idx": test_indices,
                 "feature_matrix": self.feature_matrix,
                 "target_vector": self.target_vector,
                 "model_config": self.model_config,
@@ -223,33 +197,52 @@ class MonthlyLoop:
             print("No new months to process.")
             self.save_queue.put(None)
             self.writer_thread.join()
+            if self.dashboard:
+                self.dashboard.stop_timer("walkforward")
+                self.dashboard.record("folds_processed", 0)
             return self.checkpoint_manager
 
-        # Dynamic worker count
         n_folds = len(folds)
         workers = min(self.workers, n_folds, os.cpu_count() or 1)
         print(f"Processing {n_folds} months with {workers} workers...")
 
-        # Use ProcessPoolExecutor
+        fold_times = []
         with ProcessPoolExecutor(max_workers=workers) as executor:
             futures = {executor.submit(_train_fold_worker, fold): fold["date"] for fold in folds}
 
             for future in as_completed(futures):
+                t0 = time.perf_counter()
                 result = future.result()
+                elapsed = time.perf_counter() - t0
+                fold_times.append(elapsed)
+
                 date = result["date"]
                 preds = result["predictions"]
-                # Put into background writer queue
                 self.save_queue.put((date, preds))
 
-        # Signal writer to stop
+        if fold_times:
+            avg_fold = sum(fold_times) / len(fold_times)
+            total_fit = sum(fold_times)
+            if self.dashboard:
+                self.dashboard.record("avg_fold_seconds", avg_fold)
+                self.dashboard.record("total_fit_seconds", total_fit)
+
+        # Signal writer to stop and wait
         self.save_queue.put(None)
         self.writer_thread.join()
 
-        # Merge predictions
+        # Now merge all predictions
+        merge_start = time.perf_counter()
         self._merge_predictions()
+        merge_time = time.perf_counter() - merge_start
+        if self.dashboard:
+            self.dashboard.record("merge_seconds", merge_time)
 
-        # Finalize checkpoints
         self.checkpoint_manager.finalize()
+
+        if self.dashboard:
+            self.dashboard.stop_timer("walkforward")
+            self.dashboard.record("folds_processed", n_folds)
 
         print("Walk-forward monthly loop completed.")
         return self.checkpoint_manager

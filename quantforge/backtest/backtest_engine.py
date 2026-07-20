@@ -24,6 +24,11 @@ class BacktestEngine:
 
         path = Path(self.config["prediction_file"])
 
+        print("=" * 80)
+        print("Prediction file:", path)
+        print("Exists:", path.exists())
+        print("=" * 80)
+
         if path.suffix == ".parquet":
             df = pd.read_parquet(path)
         else:
