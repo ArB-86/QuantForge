@@ -3,45 +3,59 @@ import pandas as pd
 import numpy as np
 from pathlib import Path
 import time
-import gc
-import threading
-import queue
-from concurrent.futures import ProcessPoolExecutor, as_completed
 import os
+import multiprocessing as mp
+import joblib
 
 from quantforge.training.model_manager import ModelManager
 from quantforge.walkforward.checkpoint import CheckpointManager
 
+# Global arrays – inherited read‑only via fork
+_G_FEAT = None
+_G_TARG = None
+_G_DF   = None
 
-def _train_fold_worker(fold_data):
-    date = fold_data["date"]
-    train_idx = fold_data["train_idx"]
-    test_idx = fold_data["test_idx"]
-    feature_matrix = fold_data["feature_matrix"]
-    target_vector = fold_data["target_vector"]
-    model_config = fold_data["model_config"]
-    features = fold_data["features"]
-    target = fold_data["target"]
-    test_df = fold_data["test_df"]
+def _worker(gpu_id: int, chunk: list, out_dir: str):
+    """Process a chunk of folds on a fixed GPU – writes predictions + model."""
+    os.environ["CUDA_VISIBLE_DEVICES"] = str(gpu_id)
+    feature_matrix = _G_FEAT
+    target_vector  = _G_TARG
+    df_for_test    = _G_DF
 
-    X_train = feature_matrix[train_idx]
-    y_train = target_vector[train_idx]
-    X_test = feature_matrix[test_idx]
+    # Temporary directory for models (one per fold)
+    tmp_model_dir = Path(out_dir) / "tmp_models"
+    tmp_model_dir.mkdir(parents=True, exist_ok=True)
 
-    model_manager = ModelManager(model_config)
-    model = model_manager.build()
-    model.fit(X_train, y_train)
+    for task in chunk:
+        date, train_idx, test_idx, model_config, target = task
 
-    pred_series = model.predict(X_test)
+        print(f"[GPU {gpu_id}] fitting {len(train_idx)} rows – {date}")
 
-    test_pred = test_df[['Date', 'Ticker', target, 'RETURN_1D', 'VOL_20D']].copy()
-    test_pred['PRED_RETURN'] = pred_series
+        X_train = np.take(feature_matrix, train_idx, axis=0)
+        y_train = np.take(target_vector, train_idx, axis=0)
+        X_test  = np.take(feature_matrix, test_idx, axis=0)
+        X_train = np.ascontiguousarray(X_train, dtype=np.float32)
+        X_test  = np.ascontiguousarray(X_test, dtype=np.float32)
+        y_train = np.ascontiguousarray(y_train, dtype=np.float32)
 
-    return {
-        "date": date,
-        "predictions": test_pred,
-    }
+        test_df = df_for_test.iloc[test_idx].copy()
 
+        mm = ModelManager(model_config)
+        model = mm.build()
+        model.fit(X_train, y_train)
+
+        # Save model immediately (per fold, to temp location)
+        model_filename = tmp_model_dir / f"model_{pd.Timestamp(date).strftime('%Y%m%d')}.pkl"
+        joblib.dump(model, model_filename)
+
+        print(f"[GPU {gpu_id}] {date} finished – model saved")
+
+        pred = model.predict(X_test)
+        pred_df = test_df[['Date', 'Ticker', target, 'RETURN_1D', 'VOL_20D']].copy()
+        pred_df['PRED_RETURN'] = pred
+
+        fname = Path(out_dir) / f"pred_{pd.Timestamp(date).strftime('%Y%m%d')}.parquet"
+        pred_df.to_parquet(fname, index=False, compression="zstd")
 
 class MonthlyLoop:
     def __init__(
@@ -61,7 +75,6 @@ class MonthlyLoop:
     ):
         self.df = df.copy()
         self.df = self.df.sort_values(["Date", "Ticker"], kind="mergesort").reset_index(drop=True)
-
         self.features = features
         self.target = target
         self.model_manager = model_manager
@@ -76,69 +89,47 @@ class MonthlyLoop:
 
         self.prediction_file.parent.mkdir(parents=True, exist_ok=True)
 
+        # Store model file path from config (for final model dump)
+        self.model_file = model_manager.config.get("model_file")
+        if self.model_file:
+            self.model_file = Path(self.model_file)
+            self.model_file.parent.mkdir(parents=True, exist_ok=True)
+
         self.dates = [
             pd.Timestamp(x)
             for x in self.df["Date"].drop_duplicates().sort_values().to_numpy()
         ]
 
         self.feature_matrix = self.df[self.features].to_numpy(dtype=np.float32, copy=False)
-        self.target_vector = self.df[self.target].to_numpy(dtype=np.float32, copy=False)
+        self.target_vector  = self.df[self.target].to_numpy(dtype=np.float32, copy=False)
+        self.df_for_test    = self.df[['Date', 'Ticker', self.target, 'RETURN_1D', 'VOL_20D']].copy()
 
-        # Keep only necessary columns for the test_df
-        self.df_for_test = self.df[['Date', 'Ticker', self.target, 'RETURN_1D', 'VOL_20D']].copy()
-
+        # Model config passed to workers (without file paths)
         self.model_config = {
             k: v for k, v in model_manager.config.items()
-            if k not in ["data_path", "prediction_file", "checkpoint_file"]
+            if k not in ["data_path", "prediction_file", "checkpoint_file", "model_file"]
         }
-
-        self.save_queue = queue.Queue()
-        self.writer_thread = None
 
     def _split_date(self, date):
         date = pd.Timestamp(date)
         train_start = date - timedelta(days=self.train_length)
-        train_end = date - timedelta(days=1)
-        test_start = date
-        test_end = date + timedelta(days=self.test_length - 1)
+        train_end   = date - timedelta(days=1)
+        test_start  = date
+        test_end    = date + timedelta(days=self.test_length - 1)
         return train_start, train_end, test_start, test_end
-
-    def _save_predictions(self, date, predictions):
-        predictions = predictions.copy()
-        predictions["Date"] = date
-        out_dir = self.prediction_file.parent
-        out_dir.mkdir(parents=True, exist_ok=True)
-        fname = out_dir / f"pred_{pd.Timestamp(date).strftime('%Y%m%d')}.parquet"
-        predictions.to_parquet(fname, index=False, compression="zstd")
 
     def _merge_predictions(self):
         files = sorted(self.prediction_file.parent.glob("pred_*.parquet"))
         if not files:
             return
-        merged = None
-        for f in files:
-            df = pd.read_parquet(f)
-            if merged is None:
-                merged = df
-            else:
-                merged = pd.concat([merged, df], ignore_index=True)
-        if merged is not None:
-            merged.to_parquet(self.prediction_file, index=False, compression="zstd")
-
-    def _writer_worker(self):
-        while True:
-            item = self.save_queue.get()
-            if item is None:
-                break
-            date, predictions = item
-            self._save_predictions(date, predictions)
+        frames = [pd.read_parquet(f) for f in files]
+        merged = pd.concat(frames, ignore_index=True, copy=False)
+        merged.to_parquet(self.prediction_file, index=False, compression="zstd")
 
     def run(self):
+        overall = time.perf_counter()
         if self.dashboard:
             self.dashboard.start_timer("walkforward")
-
-        self.writer_thread = threading.Thread(target=self._writer_worker, daemon=True)
-        self.writer_thread.start()
 
         completed = self.checkpoint_manager.get_completed_dates()
         if completed:
@@ -148,7 +139,8 @@ class MonthlyLoop:
 
         start_idx = self.train_length + self.test_length
 
-        folds = []
+        # Build task list (only indices + config)
+        tasks = []
         for i in range(start_idx, len(self.dates), self.step):
             date = self.dates[i]
             date_ts = pd.Timestamp(date)
@@ -157,86 +149,84 @@ class MonthlyLoop:
                 continue
 
             train_start, train_end, test_start, test_end = self._split_date(date)
-
-            train_mask = (
-                (self.df["Date"] >= train_start) &
-                (self.df["Date"] <= train_end)
-            )
-            test_mask = (
-                (self.df["Date"] >= test_start) &
-                (self.df["Date"] <= test_end)
-            )
+            train_mask = (self.df["Date"] >= train_start) & (self.df["Date"] <= train_end)
+            test_mask  = (self.df["Date"] >= test_start)  & (self.df["Date"] <= test_end)
 
             train_idx = np.where(train_mask.to_numpy())[0]
-            test_idx = np.where(test_mask.to_numpy())[0]
+            test_idx  = np.where(test_mask.to_numpy())[0]
 
-            # ---- Filter test rows with NaN features ----
             feature_block = self.feature_matrix[test_idx]
             valid_mask = ~np.isnan(feature_block).any(axis=1)
             test_idx = test_idx[valid_mask]
-
             if len(test_idx) == 0:
                 continue
 
-            test_df = self.df_for_test.iloc[test_idx].copy()
-            test_indices = test_idx
+            tasks.append((
+                date,
+                train_idx,
+                test_idx,
+                self.model_config.copy(),
+                self.target,
+            ))
 
-            folds.append({
-                "date": date,
-                "train_idx": train_idx,
-                "test_idx": test_indices,
-                "feature_matrix": self.feature_matrix,
-                "target_vector": self.target_vector,
-                "model_config": self.model_config,
-                "features": self.features,
-                "target": self.target,
-                "test_df": test_df,
-            })
+        fold_gen_time = time.perf_counter() - overall
+        print(f"Fold generation : {fold_gen_time:.2f}s")
+        n_folds = len(tasks)
 
-        if not folds:
+        if n_folds == 0:
             print("No new months to process.")
-            self.save_queue.put(None)
-            self.writer_thread.join()
             if self.dashboard:
                 self.dashboard.stop_timer("walkforward")
                 self.dashboard.record("folds_processed", 0)
             return self.checkpoint_manager
 
-        n_folds = len(folds)
-        workers = min(self.workers, n_folds, os.cpu_count() or 1)
-        print(f"Processing {n_folds} months with {workers} workers...")
+        num_gpus = min(self.workers, mp.cpu_count())
+        chunks = [[] for _ in range(num_gpus)]
+        for idx, task in enumerate(tasks):
+            gpu_id = idx % num_gpus
+            chunks[gpu_id].append(task)
 
-        fold_times = []
-        with ProcessPoolExecutor(max_workers=workers) as executor:
-            futures = {executor.submit(_train_fold_worker, fold): fold["date"] for fold in folds}
+        print(f"Distributing {n_folds} folds over {num_gpus} GPUs")
 
-            for future in as_completed(futures):
-                t0 = time.perf_counter()
-                result = future.result()
-                elapsed = time.perf_counter() - t0
-                fold_times.append(elapsed)
+        # Set globals for workers
+        global _G_FEAT, _G_TARG, _G_DF
+        _G_FEAT = self.feature_matrix
+        _G_TARG = self.target_vector
+        _G_DF   = self.df_for_test
 
-                date = result["date"]
-                preds = result["predictions"]
-                self.save_queue.put((date, preds))
+        out_dir = str(self.prediction_file.parent)
 
-        if fold_times:
-            avg_fold = sum(fold_times) / len(fold_times)
-            total_fit = sum(fold_times)
-            if self.dashboard:
-                self.dashboard.record("avg_fold_seconds", avg_fold)
-                self.dashboard.record("total_fit_seconds", total_fit)
+        procs = []
+        for gpu_id, chunk in enumerate(chunks):
+            if not chunk:
+                continue
+            p = mp.Process(target=_worker, args=(gpu_id, chunk, out_dir))
+            p.start()
+            procs.append(p)
 
-        # Signal writer to stop and wait
-        self.save_queue.put(None)
-        self.writer_thread.join()
+        for p in procs:
+            p.join()
 
-        # Now merge all predictions
+        train_time = time.perf_counter() - overall - fold_gen_time
+        print(f"Training (parallel) : {train_time:.2f}s")
+
+        # Merge predictions
         merge_start = time.perf_counter()
         self._merge_predictions()
         merge_time = time.perf_counter() - merge_start
-        if self.dashboard:
-            self.dashboard.record("merge_seconds", merge_time)
+        print(f"Merge : {merge_time:.2f}s")
+
+        # Finalise model: pick the latest model by date from tmp_models and save as final model
+        if self.model_file:
+            tmp_model_dir = Path(out_dir) / "tmp_models"
+            model_files = sorted(tmp_model_dir.glob("model_*.pkl"))
+            if model_files:
+                latest_model = model_files[-1]   # alphabetical by date works
+                print(f"Publishing final model from {latest_model.name}")
+                # Copy to final location
+                joblib.dump(joblib.load(latest_model), self.model_file)
+            else:
+                print("No model files found – skip final model save.")
 
         self.checkpoint_manager.finalize()
 
@@ -244,5 +234,7 @@ class MonthlyLoop:
             self.dashboard.stop_timer("walkforward")
             self.dashboard.record("folds_processed", n_folds)
 
+        total_time = time.perf_counter() - overall
+        print(f"TOTAL : {total_time:.2f}s")
         print("Walk-forward monthly loop completed.")
         return self.checkpoint_manager

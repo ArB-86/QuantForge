@@ -87,3 +87,49 @@ class ArtifactManager:
         """Save metrics to the run directory."""
         with open(self.metrics_file(), "w") as f:
             json.dump(metrics, f, indent=4, default=str)
+
+    def trade_log_file(self):
+        return self._run_dir / "trades.parquet"
+
+    def trade_stats_file(self):
+        return self._run_dir / "trade_stats.json"
+
+    def save_trade_log(self, trades):
+        trades.to_parquet(
+            self.trade_log_file(),
+            index=False,
+        )
+
+    def save_trade_stats(self, stats):
+        import json
+        with open(
+            self.trade_stats_file(),
+            "w",
+        ) as f:
+            json.dump(
+                stats,
+                f,
+                indent=4,
+                default=str,
+            )
+
+    def holdings_file(self):
+        return self._run_dir / "holdings.parquet"
+
+    def save_holdings(self, df):
+        df.to_parquet(
+            self.holdings_file(),
+            index=False,
+        )
+
+    def benchmark_file(self):
+        return self._run_dir / "benchmark.parquet"
+
+    def benchmark_stats_file(self):
+        return self._run_dir / "benchmark_stats.json"
+
+    def save_benchmark(self, df, stats):
+        df.to_parquet(self.benchmark_file(), index=False)
+        import json
+        with open(self.benchmark_stats_file(), "w") as f:
+            json.dump(stats, f, indent=4, default=str)

@@ -51,7 +51,7 @@ class BacktestEngine:
                 "Run walk-forward training first."
             )
 
-        portfolio = build_portfolio(
+        holdings = build_portfolio(
 
             predictions,
 
@@ -73,12 +73,12 @@ class BacktestEngine:
 
         print("=" * 80)
         print("Portfolio Method:", self.config["portfolio"])
-        print(portfolio[["Date", "Ticker", "Weight"]].head(20))
+        print(holdings[["Date", "Ticker", "Weight"]].head(20))
         print("=" * 80)
 
         portfolio = simulate(
 
-            portfolio,
+            holdings,
 
             return_column=self.config["target"],
 
@@ -116,4 +116,4 @@ class BacktestEngine:
 
         print()
 
-        return portfolio, metrics
+        return holdings, portfolio, metrics

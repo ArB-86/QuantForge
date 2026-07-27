@@ -13,6 +13,12 @@ from quantforge.storage.database.logger import ExperimentLogger
 from quantforge.automl.objectives import portfolio_objective
 from quantforge.experiment.registry import apply_experiment, get_experiment_type
 from quantforge.research.runtime_dashboard import RuntimeDashboard
+from quantforge.analytics.trade_analyzer import (
+from quantforge.benchmark.loader import load_benchmark
+from quantforge.benchmark.metrics import compute_benchmark_metrics
+    build_trade_log,
+    compute_trade_statistics,
+)
 
 
 class ExperimentRunner:
@@ -85,10 +91,41 @@ class ExperimentRunner:
 
         # ---- Backtest ----
         dashboard.start_timer("backtest")
-        portfolio, metrics = backtest(self.config)
+        holdings, portfolio, metrics = backtest(self.config)
+        artifact_mgr.save_holdings(holdings)
+        trades = build_trade_log(
+            holdings,
+            return_column=self.config["target"],
+        )
+
+        trade_stats = compute_trade_statistics(
+            trades,
+        )
+
+        artifact_mgr.save_trade_log(
+            trades,
+        )
+
+        artifact_mgr.save_trade_stats(
+            trade_stats,
+        )
+
+        metrics.update(
+            trade_stats
+        )
+        # ---- Benchmark ----
+        benchmark = load_benchmark(self.config)
+        benchmark_stats = compute_benchmark_metrics(portfolio, benchmark)
+        metrics.update(benchmark_stats)
+        artifact_mgr.save_benchmark(benchmark, benchmark_stats)
+
+
         dashboard.stop_timer("backtest")
 
         context.portfolio = portfolio
+        context.holdings = holdings
+        context.trades = trades
+
         context.metrics = metrics
 
         context.artifacts["checkpoint"] = self.config["checkpoint_file"]
