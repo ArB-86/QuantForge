@@ -68,3 +68,7 @@ Thumbs.db
 # ==========================
 *.tmp
 *.bak
+data/cache/
+results/
+output/
+*.db
