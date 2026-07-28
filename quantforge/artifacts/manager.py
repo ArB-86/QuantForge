@@ -133,3 +133,11 @@ class ArtifactManager:
         import json
         with open(self.benchmark_stats_file(), "w") as f:
             json.dump(stats, f, indent=4, default=str)
+
+    def attribution_file(self):
+        return self._run_dir / "attribution.json"
+
+    def save_attribution(self, stats):
+        import json
+        with open(self.attribution_file(), "w") as f:
+            json.dump(stats, f, indent=4, default=str)

@@ -14,11 +14,13 @@ from quantforge.automl.objectives import portfolio_objective
 from quantforge.experiment.registry import apply_experiment, get_experiment_type
 from quantforge.research.runtime_dashboard import RuntimeDashboard
 from quantforge.analytics.trade_analyzer import (
-from quantforge.benchmark.loader import load_benchmark
-from quantforge.benchmark.metrics import compute_benchmark_metrics
     build_trade_log,
     compute_trade_statistics,
 )
+from quantforge.benchmark.loader import load_benchmark
+from quantforge.benchmark.metrics import compute_benchmark_metrics
+from quantforge.analytics.attribution import compute_attribution
+from quantforge.attribution.engine import compute_attribution
 
 
 class ExperimentRunner:
@@ -113,9 +115,18 @@ class ExperimentRunner:
         metrics.update(
             trade_stats
         )
+        # ---- Trade‑based Attribution ----
+        attribution = compute_attribution(trades)
+        artifact_mgr.save_attribution(attribution)
+
+        if attribution.get("Top Contributors"):
+            metrics["Top Contributor"] = next(iter(attribution["Top Contributors"]))
+        if attribution.get("Worst Contributors"):
+            metrics["Worst Contributor"] = next(iter(attribution["Worst Contributors"]))
+
         # ---- Benchmark ----
         benchmark = load_benchmark(self.config)
-        benchmark_stats = compute_benchmark_metrics(portfolio, benchmark)
+        benchmark_stats = compute_benchmark_metrics(portfolio, benchmark, config=self.config, strategy_cagr=metrics.get('CAGR'), holding_days=self.config.get('holding_days', 20))
         metrics.update(benchmark_stats)
         artifact_mgr.save_benchmark(benchmark, benchmark_stats)
 

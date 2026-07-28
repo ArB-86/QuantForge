@@ -35,5 +35,7 @@
         "models": {
             "lightgbm": "../models/monthly_lightgbm_regressor_v17.pkl"
         }
-    }
+    },
+    "benchmark_file": "data/benchmark/nifty500.parquet",
+    "benchmark_return_column": "Return"
 }
