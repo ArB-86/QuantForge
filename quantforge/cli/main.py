@@ -27,10 +27,7 @@ def main():
     # -------------------
 
     p = sub.add_parser("train")
-    p.add_argument(
-        "--config",
-        required=True,
-    )
+    p.add_argument("--config", required=True)
     p.add_argument(
         "--force",
         action="store_true",
@@ -42,25 +39,29 @@ def main():
     # -------------------
 
     p = sub.add_parser("backtest")
-    p.add_argument(
-        "--config",
-        required=True,
-    )
+    p.add_argument("--config", required=True)
 
     # -------------------
     # optimize
     # -------------------
 
     p = sub.add_parser("optimize")
-    p.add_argument(
-        "--config",
-        required=True,
-    )
+    p.add_argument("--config", required=True)
     p.add_argument(
         "--trials",
         type=int,
         default=100,
         help="Number of Optuna trials",
+    )
+    p.add_argument(
+        "--storage",
+        default=None,
+        help="Optional Optuna storage URL, e.g. sqlite:///quantforge_optuna.db",
+    )
+    p.add_argument(
+        "--study-name",
+        default="QuantForge",
+        help="Optuna study name",
     )
 
     # -------------------
@@ -68,10 +69,7 @@ def main():
     # -------------------
 
     p = sub.add_parser("experiment")
-    p.add_argument(
-        "--config",
-        required=True,
-    )
+    p.add_argument("--config", required=True)
     p.add_argument(
         "--experiment",
         default="baseline",
@@ -83,50 +81,35 @@ def main():
     # -------------------
 
     p = sub.add_parser("shap")
-    p.add_argument(
-        "--config",
-        required=True,
-    )
+    p.add_argument("--config", required=True)
 
     # -------------------
     # compare
     # -------------------
 
     p = sub.add_parser("compare")
-    p.add_argument(
-        "--config",
-        required=True,
-    )
+    p.add_argument("--config", required=True)
 
     # -------------------
     # alpha
     # -------------------
 
     p = sub.add_parser("alpha")
-    p.add_argument(
-        "--config",
-        required=True,
-    )
+    p.add_argument("--config", required=True)
 
     # -------------------
     # build-features (NEW)
     # -------------------
 
     p = sub.add_parser("build-features")
-    p.add_argument(
-        "--config",
-        required=True,
-    )
+    p.add_argument("--config", required=True)
 
     # -------------------
     # benchmark
     # -------------------
 
     p = sub.add_parser("benchmark")
-    p.add_argument(
-        "--config",
-        required=True,
-    )
+    p.add_argument("--config", required=True)
     p.add_argument(
         "--experiment",
         default="baseline",
@@ -138,10 +121,7 @@ def main():
     # -------------------
 
     p = sub.add_parser("diagnostics")
-    p.add_argument(
-        "--config",
-        required=True,
-    )
+    p.add_argument("--config", required=True)
 
     # -------------------
     # report
@@ -171,11 +151,9 @@ def main():
     args = parser.parse_args()
 
     if args.command == "train":
-
         cfg = Config(args.config).dict()
 
         if args.force:
-
             ckpt = Path(cfg["checkpoint_file"])
             model = Path(cfg["model_file"])
 
@@ -194,12 +172,17 @@ def main():
 
     elif args.command == "optimize":
         from quantforge.research.runner import ExperimentRunner
-        from quantforge.automl.engine import OptunaEngine
+        from quantforge.optimization.optuna_engine import OptunaEngine
 
         cfg = Config(args.config).dict()
         runner = ExperimentRunner()
         engine = OptunaEngine(base_config=cfg, runner=runner)
-        engine.optimize(n_trials=args.trials)
+        engine.optimize(
+            n_trials=args.trials,
+            storage=args.storage,
+            study_name=args.study_name,
+            load_if_exists=True,
+        )
 
     elif args.command == "experiment":
         from quantforge.research_pipeline.runner import ExperimentRunner
@@ -314,6 +297,7 @@ def main():
 
         for i, (name, score) in enumerate(results, 1):
             print(f"{i:2d}. {name:<40} {score:.6f}")
+
 
 if __name__ == "__main__":
     main()
