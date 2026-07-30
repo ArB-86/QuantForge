@@ -1,17 +1,17 @@
 {
-    "name": "CatBoost Regression",
+    "name": "LightGBM Regression",
 
-    "model": "catboost",
+    "model": "lightgbm",
 
     "target": "TARGET_20D_RETURN",
 
     "data_path": "../data/training/master_v9.parquet",
 
-    "checkpoint_file": "../data/checkpoints/monthly_walkforward_catboost_v17.csv",
+    "checkpoint_file": "../data/checkpoints/monthly_walkforward_regression_v17.csv",
 
-    "model_file": "../models/monthly_catboost_regressor_v17.pkl",
+    "model_file": "../models/monthly_lightgbm_regressor_v17.pkl",
 
-    "prediction_file": "../data/checkpoints/monthly_walkforward_catboost_v17.csv",
+    "prediction_file": "../data/checkpoints/monthly_walkforward_regression_v17.csv",
 
     "feature_store": "v3",
 
@@ -27,25 +27,29 @@
 
     "seed": 42,
 
-    "iterations": 800,
+    "n_estimators": 500,
 
     "learning_rate": 0.03,
 
-    "depth": 8,
+    "num_leaves": 64,
 
-    "l2_leaf_reg": 3.0,
+    "max_depth": 5,
 
-    "bagging_temperature": 0.2,
+    "subsample": 0.8,
 
-    "random_strength": 1.0,
+    "subsample_freq": 1,
 
-    "border_count": 128,
+    "colsample_bytree": 0.8,
 
-    "task_type": "GPU",
+    "min_child_samples": 20,
 
-    "devices": "0",
+    "reg_alpha": 0.0,
 
-    "verbose": false,
+    "reg_lambda": 0.0,
+
+    "random_state": 42,
+
+    "device": "gpu",
 
     "n_jobs": -1,
 
