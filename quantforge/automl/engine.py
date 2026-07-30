@@ -79,6 +79,8 @@ class OptunaEngine:
         cfg.pop("subsample_freq", None)
         cfg.pop("device", None)
         cfg.pop("max_depth", None)
+        cfg.pop("reg_alpha", None)
+        cfg.pop("reg_lambda", None)
         cfg["task_type"] = cfg.get("task_type", "GPU")
         visible = os.environ.get("CUDA_VISIBLE_DEVICES")
         cfg["devices"] = "0" if visible else cfg.get("devices", "0")
