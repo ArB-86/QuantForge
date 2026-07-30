@@ -22,9 +22,13 @@ class OptunaEngine:
         model = Path(cfg["model_file"])
         prediction = Path(cfg["prediction_file"])
 
-        checkpoint = checkpoint.with_name(f"{checkpoint.stem}_trial_{trial_id}{checkpoint.suffix}")
+        checkpoint = checkpoint.with_name(
+            f"{checkpoint.stem}_trial_{trial_id}{checkpoint.suffix}"
+        )
         model = model.with_name(f"{model.stem}_trial_{trial_id}{model.suffix}")
-        prediction = prediction.with_name(f"{prediction.stem}_trial_{trial_id}{prediction.suffix}")
+        prediction = prediction.with_name(
+            f"{prediction.stem}_trial_{trial_id}{prediction.suffix}"
+        )
 
         return {
             "checkpoint_file": str(checkpoint),
@@ -34,12 +38,18 @@ class OptunaEngine:
 
     def _suggest_lightgbm(self, trial, cfg: Dict[str, Any]) -> Dict[str, Any]:
         space = SEARCH_SPACE["lightgbm"]
-        cfg["learning_rate"] = trial.suggest_float("learning_rate", *space["learning_rate"], log=True)
+        cfg["learning_rate"] = trial.suggest_float(
+            "learning_rate", *space["learning_rate"], log=True
+        )
         cfg["num_leaves"] = trial.suggest_int("num_leaves", *space["num_leaves"])
         cfg["max_depth"] = trial.suggest_int("max_depth", *space["max_depth"])
         cfg["subsample"] = trial.suggest_float("subsample", *space["subsample"])
-        cfg["colsample_bytree"] = trial.suggest_float("colsample_bytree", *space["colsample_bytree"])
-        cfg["min_child_samples"] = trial.suggest_int("min_child_samples", *space["min_child_samples"])
+        cfg["colsample_bytree"] = trial.suggest_float(
+            "colsample_bytree", *space["colsample_bytree"]
+        )
+        cfg["min_child_samples"] = trial.suggest_int(
+            "min_child_samples", *space["min_child_samples"]
+        )
         cfg["reg_alpha"] = trial.suggest_float("reg_alpha", *space["reg_alpha"])
         cfg["reg_lambda"] = trial.suggest_float("reg_lambda", *space["reg_lambda"])
         return cfg
@@ -47,17 +57,28 @@ class OptunaEngine:
     def _suggest_catboost(self, trial, cfg: Dict[str, Any]) -> Dict[str, Any]:
         space = SEARCH_SPACE["catboost"]
         cfg["iterations"] = trial.suggest_int("iterations", *space["iterations"])
-        cfg["learning_rate"] = trial.suggest_float("learning_rate", *space["learning_rate"], log=True)
+        cfg["learning_rate"] = trial.suggest_float(
+            "learning_rate", *space["learning_rate"], log=True
+        )
         cfg["depth"] = trial.suggest_int("depth", *space["depth"])
-        cfg["l2_leaf_reg"] = trial.suggest_float("l2_leaf_reg", *space["l2_leaf_reg"])
-        cfg["bagging_temperature"] = trial.suggest_float("bagging_temperature", *space["bagging_temperature"])
-        cfg["random_strength"] = trial.suggest_float("random_strength", *space["random_strength"])
-        cfg["border_count"] = trial.suggest_int("border_count", *space["border_count"])
+        cfg["l2_leaf_reg"] = trial.suggest_float(
+            "l2_leaf_reg", *space["l2_leaf_reg"]
+        )
+        cfg["bagging_temperature"] = trial.suggest_float(
+            "bagging_temperature", *space["bagging_temperature"]
+        )
+        cfg["random_strength"] = trial.suggest_float(
+            "random_strength", *space["random_strength"]
+        )
+        cfg["border_count"] = trial.suggest_int(
+            "border_count", *space["border_count"]
+        )
         cfg.pop("num_leaves", None)
         cfg.pop("min_child_samples", None)
         cfg.pop("colsample_bytree", None)
         cfg.pop("subsample_freq", None)
         cfg.pop("device", None)
+        cfg.pop("max_depth", None)
         cfg["task_type"] = cfg.get("task_type", "GPU")
         visible = os.environ.get("CUDA_VISIBLE_DEVICES")
         cfg["devices"] = "0" if visible else cfg.get("devices", "0")
@@ -67,7 +88,6 @@ class OptunaEngine:
     def objective(self, trial):
         cfg = copy.deepcopy(self.base_config)
         trial_id = trial.number
-
         cfg.update(self._artifact_paths(cfg, trial_id))
 
         backend = str(cfg.get("model", "lightgbm")).lower().strip()
@@ -108,17 +128,18 @@ class OptunaEngine:
         trial.set_user_attr("model_file", cfg["model_file"])
         trial.set_user_attr("prediction_file", cfg["prediction_file"])
         trial.set_user_attr("score", float(score))
-        trial.set_user_attr("metrics", {k: v for k, v in metrics.items() if isinstance(v, (str, int, float, bool))})
+        trial.set_user_attr(
+            "metrics",
+            {
+                k: v
+                for k, v in metrics.items()
+                if isinstance(v, (str, int, float, bool))
+            },
+        )
 
         return score
 
-    def optimize(
-        self,
-        n_trials=100,
-        storage=None,
-        study_name="QuantForge",
-        load_if_exists=True,
-    ):
+    def optimize(self, n_trials=100, storage=None, study_name="QuantForge", load_if_exists=True):
         study_dir = Path("results/studies")
         study_dir.mkdir(parents=True, exist_ok=True)
 
