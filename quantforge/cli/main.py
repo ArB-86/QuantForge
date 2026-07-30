@@ -1,13 +1,18 @@
 import argparse
-import pandas as pd
+import json
 from pathlib import Path
 
-from quantforge.trainer.engine import train
+import pandas as pd
+
+from quantforge.automl.engine import OptunaEngine
 from quantforge.backtest_engine.engine import backtest
-from quantforge.core.config.config import Config
-from quantforge.research.shap_analysis import shap_analysis
-from quantforge.research.alpha_research import alpha_research
 from quantforge.cli.benchmark import benchmark
+from quantforge.core.config.config import Config
+from quantforge.research.alpha_research import alpha_research
+from quantforge.research.runner import ExperimentRunner
+from quantforge.research.shap_analysis import shap_analysis
+from quantforge.trainer.engine import train
+from quantforge.walkforward import WalkForwardStudyManager
 
 
 def main():
@@ -62,6 +67,30 @@ def main():
         "--study-name",
         default="QuantForge",
         help="Optuna study name",
+    )
+
+    # -------------------
+    # walkforward-optimize
+    # -------------------
+
+    p = sub.add_parser("walkforward-optimize")
+    p.add_argument("--config", required=True)
+    p.add_argument(
+        "--trials-per-window",
+        type=int,
+        default=20,
+        help="Number of Optuna trials per walk-forward window",
+    )
+    p.add_argument(
+        "--storage",
+        default=None,
+        help="Optional Optuna storage URL for the walk-forward studies",
+    )
+    p.add_argument(
+        "--max-windows",
+        type=int,
+        default=None,
+        help="Limit the number of walk-forward windows processed",
     )
 
     # -------------------
@@ -171,12 +200,9 @@ def main():
         backtest(args.config)
 
     elif args.command == "optimize":
-        from quantforge.research.runner import ExperimentRunner
-        from quantforge.optimization.optuna_engine import OptunaEngine
-
         cfg = Config(args.config).dict()
-        runner = ExperimentRunner()
-        engine = OptunaEngine(base_config=cfg, runner=runner)
+        runner = ExperimentRunner(cfg)
+        engine = OptunaEngine(base_config=cfg, runner=runner.run)
         engine.optimize(
             n_trials=args.trials,
             storage=args.storage,
@@ -184,10 +210,21 @@ def main():
             load_if_exists=True,
         )
 
-    elif args.command == "experiment":
-        from quantforge.research_pipeline.runner import ExperimentRunner
+    elif args.command == "walkforward-optimize":
+        cfg = Config(args.config).dict()
+        manager = WalkForwardStudyManager(cfg)
+        results = manager.run(
+            n_trials_per_window=args.trials_per_window,
+            storage=args.storage,
+            load_if_exists=True,
+            max_windows=args.max_windows,
+        )
+        print(json.dumps(results, indent=2, default=str))
 
-        context = ExperimentRunner(args.config).run(
+    elif args.command == "experiment":
+        from quantforge.research_pipeline.runner import ExperimentRunner as PipelineRunner
+
+        context = PipelineRunner(args.config).run(
             experiment=args.experiment,
         )
 
@@ -226,7 +263,6 @@ def main():
         alpha_research(df)
 
     elif args.command == "build-features":
-        from quantforge.core.config.config import Config
         from quantforge.dataset.builder import DatasetBuilder
         cfg = Config(args.config).dict()
         builder = DatasetBuilder(
