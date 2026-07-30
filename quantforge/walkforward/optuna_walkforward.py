@@ -135,6 +135,7 @@ class WalkForwardStudyManager:
             "best_value": study.best_value,
             "best_params": study.best_params,
             "best_trial_number": study.best_trial.number,
+            "storage": storage,
         }
         window_dir = self.output_dir / window.name
         window_dir.mkdir(parents=True, exist_ok=True)
