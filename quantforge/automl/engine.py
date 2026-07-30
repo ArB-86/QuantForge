@@ -107,6 +107,8 @@ class OptunaEngine:
         trial.set_user_attr("checkpoint_file", cfg["checkpoint_file"])
         trial.set_user_attr("model_file", cfg["model_file"])
         trial.set_user_attr("prediction_file", cfg["prediction_file"])
+        trial.set_user_attr("score", float(score))
+        trial.set_user_attr("metrics", {k: v for k, v in metrics.items() if isinstance(v, (str, int, float, bool))})
 
         return score
 
@@ -144,10 +146,22 @@ class OptunaEngine:
 
         best_payload = {
             "study_name": study.study_name,
+            "storage": storage,
+            "n_trials": len(study.trials),
             "best_value": study.best_value,
             "best_params": study.best_params,
             "best_trial_number": study.best_trial.number,
             "best_trial_user_attrs": dict(study.best_trial.user_attrs),
+            "trials_summary": [
+                {
+                    "number": t.number,
+                    "value": t.value,
+                    "state": str(t.state),
+                    "params": t.params,
+                    "user_attrs": dict(t.user_attrs),
+                }
+                for t in study.trials
+            ],
         }
         (study_dir / f"{study.study_name}_best.json").write_text(
             json.dumps(best_payload, indent=4, default=str)
