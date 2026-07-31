@@ -20,6 +20,7 @@ from quantforge.research_pipeline.validation import ValidationManager
 from quantforge.storage.database.logger import ExperimentLogger
 from quantforge.automl.objectives import portfolio_objective
 from quantforge.trainer.engine import train
+from quantforge.walkforward import WalkForwardEngine
 
 
 class ExperimentRunner:
@@ -27,6 +28,28 @@ class ExperimentRunner:
         if isinstance(config, str):
             config = Config(config).dict()
         self.config = config
+
+    def _run_walkforward(self, context, dashboard):
+        walk_cfg = dict(self.config)
+        walk_cfg["name"] = self.config.get("name", "walkforward")
+        engine = WalkForwardEngine(
+            base_config=walk_cfg,
+            runner=self.run,
+            output_dir=str(Path("results") / "walkforward_optuna"),
+        )
+        dashboard.record("training_skipped", True)
+        results = engine.run(
+            n_trials_per_window=int(self.config.get("trials_per_window", 20)),
+            storage=self.config.get("optuna_storage"),
+            load_if_exists=True,
+            max_windows=self.config.get("max_windows"),
+        )
+        context.metrics = {
+            "WalkForwardWindows": len(results),
+            "WalkForwardBestScore": max((r.get("best_value", float("-inf")) for r in results), default=float("-inf")),
+        }
+        context.artifacts["walkforward_summary"] = str(Path("results") / "walkforward_optuna" / "walkforward_summary.json")
+        return context
 
     def run(self, experiment="baseline"):
         self.config = apply_experiment(self.config, experiment)
@@ -53,6 +76,25 @@ class ExperimentRunner:
         context.artifacts["run_dir"] = str(artifact_mgr.run_dir)
 
         exp_type = get_experiment_type(experiment)
+        if exp_type == "walkforward":
+            context = self._run_walkforward(context, dashboard)
+            ValidationManager(context).validate()
+            logger = ExperimentLogger()
+            score = portfolio_objective(context.metrics or {})
+            context.metrics["Score"] = score
+            logger.log(
+                self.config,
+                context.metrics,
+                score,
+                study=self.config.get("optuna_study"),
+            )
+            MetricsManager(context).save()
+            artifact_mgr.save_metrics(context.metrics)
+            context.status = "COMPLETED"
+            dashboard.stop_timer("total")
+            dashboard.save()
+            return context
+
         pred_path = Path(self.config["prediction_file"])
 
         if exp_type == "portfolio" and pred_path.exists():
