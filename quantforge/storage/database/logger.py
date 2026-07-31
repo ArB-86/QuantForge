@@ -11,12 +11,15 @@ class ExperimentLogger:
         row = {
             "name": config["name"],
             "model": config["model"],
-            "Sharpe": metrics["Sharpe"],
-            "CAGR": metrics["CAGR"],
-            "Max Drawdown": metrics["Max Drawdown"],
-            "Win Rate": metrics["Win Rate"],
+            "Sharpe": metrics.get("Sharpe"),
+            "CAGR": metrics.get("CAGR"),
+            "Max Drawdown": metrics.get("Max Drawdown"),
+            "Win Rate": metrics.get("Win Rate"),
             "Score": score,
             "params": str(config),
+            "walkforward_windows": metrics.get("WalkForwardWindows"),
+            "walkforward_best_score": metrics.get("WalkForwardBestScore"),
+            "walkforward_summary_path": metrics.get("walkforward_summary_path"),
         }
 
         if study is not None:
