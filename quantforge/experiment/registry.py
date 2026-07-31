@@ -65,6 +65,13 @@ EXPERIMENTS = {
         "model_file": "../models/risk_parity.pkl",
         "type": "portfolio",
     },
+
+    "walkforward": {
+        "prediction_file": "../data/checkpoints/walkforward_predictions.parquet",
+        "checkpoint_file": "../data/checkpoints/walkforward_progress.csv",
+        "model_file": "../models/walkforward.pkl",
+        "type": "walkforward",
+    },
 }
 
 
