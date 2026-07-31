@@ -49,6 +49,7 @@ class ExperimentRunner:
             "WalkForwardBestScore": max((r.get("best_value", float("-inf")) for r in results), default=float("-inf")),
         }
         context.artifacts["walkforward_summary"] = str(Path("results") / "walkforward_optuna" / "walkforward_summary.json")
+        context.artifacts["walkforward_windows"] = str(len(results))
         return context
 
     def run(self, experiment="baseline"):
