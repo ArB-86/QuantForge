@@ -33,6 +33,9 @@ class ExperimentDB:
                 best_trial_number INTEGER,
                 best_params TEXT,
                 best_value REAL,
+                walkforward_windows INTEGER,
+                walkforward_best_score REAL,
+                walkforward_summary_path TEXT,
                 created TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
             """
@@ -52,6 +55,9 @@ class ExperimentDB:
             "best_trial_number": "INTEGER",
             "best_params": "TEXT",
             "best_value": "REAL",
+            "walkforward_windows": "INTEGER",
+            "walkforward_best_score": "REAL",
+            "walkforward_summary_path": "TEXT",
         }
         for col, ddl in additions.items():
             if col not in existing:
@@ -77,10 +83,13 @@ class ExperimentDB:
                     trial_count,
                     best_trial_number,
                     best_params,
-                    best_value
+                    best_value,
+                    walkforward_windows,
+                    walkforward_best_score,
+                    walkforward_summary_path
                 )
                 VALUES(
-                    ?,?,?,?,?,?,?,?,?,?,?,?,?,?
+                    ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?
                 )
                 """,
                 (
@@ -97,6 +106,9 @@ class ExperimentDB:
                     row.get("best_trial_number"),
                     row.get("best_params"),
                     row.get("best_value"),
+                    row.get("walkforward_windows"),
+                    row.get("walkforward_best_score"),
+                    row.get("walkforward_summary_path"),
                 ),
             )
             self.conn.commit()
@@ -128,6 +140,9 @@ class ExperimentDB:
             "best_trial_number",
             "best_params",
             "best_value",
+            "walkforward_windows",
+            "walkforward_best_score",
+            "walkforward_summary_path",
             "created",
         ]
 
