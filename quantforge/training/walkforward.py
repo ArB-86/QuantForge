@@ -6,9 +6,11 @@ from quantforge.walkforward.monthly import MonthlyLoop
 
 class WalkForwardTrainer:
 
-    def __init__(self, config):
+    def __init__(self, config, skip_feature_importance=False, dashboard=None, **kwargs):
 
         self.config = config
+        self.skip_feature_importance = skip_feature_importance
+        self.dashboard = dashboard
 
     def run(self):
 
@@ -49,6 +51,7 @@ class WalkForwardTrainer:
             model_manager=model_manager,
 
             checkpoint_manager=checkpoint,
+            prediction_file=self.config["prediction_file"],
 
             purge_days=self.config.get(
                 "purge_days",

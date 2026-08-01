@@ -133,9 +133,11 @@ class ExperimentRunner:
         metrics.update(trade_stats)
 
         benchmark = load_benchmark(self.config)
-        benchmark_stats = compute_benchmark_metrics(portfolio, benchmark)
-        metrics.update(benchmark_stats)
-        artifact_mgr.save_benchmark(benchmark, benchmark_stats)
+
+        if benchmark is not None:
+            benchmark_stats = compute_benchmark_metrics(portfolio, benchmark)
+            metrics.update(benchmark_stats)
+            artifact_mgr.save_benchmark(benchmark, benchmark_stats)
 
         dashboard.stop_timer("backtest")
 

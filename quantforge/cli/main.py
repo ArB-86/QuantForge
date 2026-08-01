@@ -1,3 +1,4 @@
+import click
 import argparse
 import json
 from pathlib import Path
@@ -12,7 +13,6 @@ from quantforge.research.alpha_research import alpha_research
 from quantforge.research.runner import ExperimentRunner
 from quantforge.research.shap_analysis import shap_analysis
 from quantforge.trainer.engine import train
-from quantforge.walkforward import WalkForwardStudyManager
 
 
 def main():
@@ -211,14 +211,21 @@ def main():
         )
 
     elif args.command == "walkforward-optimize":
+        from quantforge.walkforward.optuna_walkforward import (
+            WalkForwardStudyManager,
+        )
+
         cfg = Config(args.config).dict()
+
         manager = WalkForwardStudyManager(cfg)
+
         results = manager.run(
             n_trials_per_window=args.trials_per_window,
             storage=args.storage,
             load_if_exists=True,
             max_windows=args.max_windows,
         )
+
         print(json.dumps(results, indent=2, default=str))
 
     elif args.command == "experiment":
@@ -333,6 +340,7 @@ def main():
 
         for i, (name, score) in enumerate(results, 1):
             print(f"{i:2d}. {name:<40} {score:.6f}")
+
 
 
 if __name__ == "__main__":

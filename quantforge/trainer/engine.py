@@ -1,5 +1,5 @@
 from quantforge.core.config.config import Config
-from quantforge.walkforward.engine import WalkForwardTrainer
+from quantforge.training.walkforward import WalkForwardTrainer
 
 
 def train(config, skip_feature_importance=False, dashboard=None):
