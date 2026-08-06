@@ -1,0 +1,11 @@
+TOP_N = 10
+
+HOLDING_DAYS = 5
+
+ROUND_TRIP_COST = 0.002
+
+PORTFOLIO = "inverse_volatility"
+
+SIGNAL = "ensemble"
+
+TARGET = "TARGET_5D_RETURN"

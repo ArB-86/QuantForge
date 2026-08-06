@@ -1,0 +1,6 @@
+"""
+TradingSession
+"""
+
+class TradingSession:
+    pass

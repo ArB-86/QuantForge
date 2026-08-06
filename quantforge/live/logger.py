@@ -1,0 +1,6 @@
+"""
+TradeLogger
+"""
+
+class TradeLogger:
+    pass

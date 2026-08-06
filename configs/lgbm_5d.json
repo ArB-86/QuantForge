@@ -1,0 +1,6 @@
+{
+    "name":"LightGBM_5D",
+    "target":"TARGET_5D_RETURN",
+    "checkpoint":"monthly_walkforward_regression.csv",
+    "model":"monthly_lightgbm_regressor.pkl"
+}

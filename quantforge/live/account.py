@@ -1,0 +1,6 @@
+"""
+TradingAccount
+"""
+
+class TradingAccount:
+    pass

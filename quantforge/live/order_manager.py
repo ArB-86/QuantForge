@@ -1,0 +1,6 @@
+"""
+OrderManager
+"""
+
+class OrderManager:
+    pass

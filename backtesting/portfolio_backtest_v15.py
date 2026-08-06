@@ -1,0 +1,284 @@
+import os
+from pathlib import Path
+OUT = Path(os.environ["QF_EXPERIMENT_DIR"])
+OUT.mkdir(parents=True, exist_ok=True)
+import pandas as pd
+import numpy as np
+from pathlib import Path
+
+# ====================
+# PATHS
+# ====================
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+DATA_ROOT = PROJECT_ROOT.parent / "data"
+
+# ====================
+# SETTINGS
+# ====================
+
+TOP_N = 10
+HOLD_DAYS = 20
+# ROUND_TRIP_COST used for turnover-based transaction cost
+ROUND_TRIP_COST = 0.002
+
+# ====================
+# LOAD DATA
+# ====================
+
+df = pd.read_csv(
+    DATA_ROOT
+    / "checkpoints"
+    / "monthly_walkforward_regression_v15.csv"
+)
+
+df["Date"] = pd.to_datetime(
+    df["Date"]
+)
+
+# ====================
+# PORTFOLIO CONSTRUCTION
+# ====================
+
+dates = sorted(
+    df["Date"].unique()
+)
+
+# ====================
+# REPLACED PORTFOLIO LOGIC (turnover + transaction cost)
+# ====================
+
+portfolio_returns = []
+
+previous_holdings = set()
+
+for i in range(
+    0,
+    len(dates),
+    HOLD_DAYS
+):
+
+    date = dates[i]
+
+    group = df[
+        df["Date"] == date
+    ]
+
+    group = group[
+        group["BULL_REGIME"] == 1
+    ]
+
+    picks = (
+        group
+        .sort_values(
+            "PRED_RETURN",
+            ascending=False
+        )
+        .head(TOP_N)
+    )
+
+    current_holdings = set(
+        picks["Ticker"]
+    )
+
+    gross_return = (
+        picks[
+            "TARGET_20D_RETURN"
+        ].mean()
+    )
+
+    if len(previous_holdings) == 0:
+        turnover = 1.0
+    else:
+        overlap = len(
+            previous_holdings &
+            current_holdings
+        )
+        turnover = (
+            TOP_N - overlap
+        ) / TOP_N
+
+    transaction_cost = (
+        turnover *
+        ROUND_TRIP_COST
+    )
+
+    net_return = (
+        gross_return -
+        transaction_cost
+    )
+
+    portfolio_returns.append(
+        [
+            date,
+            gross_return,
+            transaction_cost,
+            turnover,
+            net_return
+        ]
+    )
+
+    previous_holdings = current_holdings
+
+# ====================
+# PORTFOLIO DF (updated columns)
+# ====================
+
+portfolio = pd.DataFrame(
+    portfolio_returns,
+    columns=[
+        "Date",
+        "GrossReturn",
+        "TransactionCost",
+        "Turnover",
+        "Return"
+    ]
+)
+
+print(portfolio["Return"].describe())
+
+portfolio["Equity"] = (
+    1 + portfolio["Return"]
+).cumprod()
+
+portfolio.to_csv(
+    OUT / "portfolio.csv",
+    index=False
+)
+
+# ====================
+# METRICS
+# ====================
+
+years = (
+    len(portfolio)
+    * HOLD_DAYS
+) / 252
+
+cagr = (
+    portfolio["Equity"].iloc[-1]
+    **
+    (1 / years)
+    - 1
+)
+
+vol = (
+    portfolio["Return"].std()
+    *
+    np.sqrt(
+        252 / HOLD_DAYS
+    )
+)
+
+sharpe = (
+    portfolio["Return"].mean()
+    /
+    portfolio["Return"].std()
+    *
+    np.sqrt(
+        252 / HOLD_DAYS
+    )
+)
+
+rolling_max = (
+    portfolio["Equity"]
+    .cummax()
+)
+
+drawdown = (
+    portfolio["Equity"]
+    /
+    rolling_max
+    - 1
+)
+
+max_dd = drawdown.min()
+
+win_rate = (
+    portfolio["Return"] > 0
+).mean()
+
+# ====================
+# OUTPUT
+# ====================
+
+print("\n====================")
+print("REGRESSION PORTFOLIO (with turnover & transaction cost)")
+print("====================")
+
+print(
+    "Rebalances:",
+    len(portfolio)
+)
+
+print(
+    "Final Equity:",
+    round(
+        portfolio["Equity"].iloc[-1],
+        4
+    )
+)
+
+print(
+    "CAGR:",
+    round(
+        cagr * 100,
+        2
+    ),
+    "%"
+)
+
+print(
+    "Sharpe:",
+    round(
+        sharpe,
+        2
+    )
+)
+
+print(
+    "Volatility:",
+    round(
+        vol * 100,
+        2
+    ),
+    "%"
+)
+
+print(
+    "Max Drawdown:",
+    round(
+        max_dd * 100,
+        2
+    ),
+    "%"
+)
+
+print(
+    "Win Rate:",
+    round(
+        win_rate * 100,
+        2
+    ),
+    "%"
+)
+import json
+
+metrics = {
+    "Sharpe": float(sharpe),
+    "CAGR": float(cagr),
+    "MaxDD": float(max_dd),
+    "WinRate": float(win_rate),
+    "FinalEquity": float(portfolio["Equity"].iloc[-1])
+}
+
+with open(
+    OUT / "metrics.json",
+    "w"
+) as fp:
+
+    json.dump(
+        metrics,
+        fp,
+        indent=4
+    )

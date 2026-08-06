@@ -1,0 +1,6 @@
+"""
+TradingClock
+"""
+
+class TradingClock:
+    pass

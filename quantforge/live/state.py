@@ -1,0 +1,6 @@
+"""
+LiveState
+"""
+
+class LiveState:
+    pass

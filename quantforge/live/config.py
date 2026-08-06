@@ -1,0 +1,6 @@
+"""
+LiveConfig
+"""
+
+class LiveConfig:
+    pass

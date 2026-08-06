@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Data
+data/
+!data/tickers.csv
+
+# Models
+models/
+*.pkl
+*.jobl
