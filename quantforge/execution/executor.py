@@ -16,19 +16,17 @@ class OrderExecutor:
             ticker = row['Ticker']
             weight = row['Weight']
             
-            # Use VOL_20D or mock execution price proxy if price not directly available
-            # Assuming a proxy price or fetching close price from VOL/Prediction or recent data
-            # Let's derive an approximate execution price or use a default baseline if columns vary
             capital_allocated = self.portfolio_value * weight
             
-            # Look for a price proxy or fallback to a standard estimation based on typical Indian large-caps if needed
-            # If execution price is in row, use it; otherwise estimate from VOL or default to 1000
-            price = row.get('Execution_Price', row.get('Close', 1000.0))
-            if price <= 0:
-                price = 1000.0
+            # Extract true price if available, otherwise check common price columns
+            price = row.get('Close', row.get('Execution_Price', 0.0))
+            if pd.isna(price) or price <= 0:
+                price = 1000.0  # Fallback only if data is missing
                 
             target_shares = int(capital_allocated // price)
-            
+            if target_shares <= 0:
+                target_shares = 1  .
+                
             orders.append({
                 'Ticker': ticker,
                 'Target_Shares': target_shares,
@@ -37,5 +35,4 @@ class OrderExecutor:
                 'Target_Weight': weight
             })
             
-        orders_df = pd.DataFrame(orders)
-        return orders_df
+        return pd.DataFrame(orders)
