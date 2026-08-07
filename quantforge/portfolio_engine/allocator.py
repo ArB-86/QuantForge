@@ -11,12 +11,18 @@ def build_portfolio(oos_df: pd.DataFrame, method='inverse_vol', score_column='Pr
     for i, date in enumerate(unique_dates):
         group = oos_df[oos_df['Date'] == date]
         
-        # Rebalance only every 'rebalance_freq' days, otherwise carry forward previous weights
+        # --- MARKET REGIME FILTER ---
+        # If the median prediction or average return of the universe is negative, market is bearish -> go to cash (empty portfolio)
+        market_sentiment = group[score_column].mean()
+        if market_sentiment < 0.0:
+            # Bearish regime: zero out weights / go to cash
+            previous_holdings = set()
+            current_weights = pd.Series(dtype=float)
+            continue
+            
         if i % rebalance_freq != 0 and not current_weights.empty and previous_holdings:
-            # Carry forward weights for tickers still in previous holdings
             held_group = group[group['Ticker'].isin(previous_holdings)].copy()
             if not held_group.empty:
-                # Maintain proportional weights from last rebalance
                 held_group['Weight'] = [current_weights.get(t, 0.0) for t in held_group['Ticker']]
                 total_w = held_group['Weight'].sum()
                 if total_w > 0:
