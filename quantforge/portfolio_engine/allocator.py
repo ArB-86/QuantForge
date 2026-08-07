@@ -1,6 +1,7 @@
 import pandas as pd
+import numpy as np
 
-def build_portfolio(oos_df: pd.DataFrame, method='score_weight', score_column='Prediction', top_k=10, buffer_k=15):
+def build_portfolio(oos_df: pd.DataFrame, method='inverse_vol', score_column='Prediction', top_k=10, buffer_k=15):
     portfolio_rows = []
     previous_holdings = set()
     
@@ -9,15 +10,12 @@ def build_portfolio(oos_df: pd.DataFrame, method='score_weight', score_column='P
         sorted_group['Rank'] = sorted_group.index + 1
         
         if not previous_holdings:
-            # Initial selection: Top K
             selected = sorted_group[sorted_group['Rank'] <= top_k].copy()
         else:
-            # Hysteresis buffer: Keep existing holdings if they are within buffer_k, otherwise pick top_k
             is_held = sorted_group['Ticker'].isin(previous_holdings)
             is_qualified = sorted_group['Rank'] <= buffer_k
             selected_mask = is_held & is_qualified
             
-            # Fill remaining slots up to top_k with top unheld stocks
             num_needed = top_k - selected_mask.sum()
             if num_needed > 0:
                 unheld_mask = ~selected_mask
@@ -25,7 +23,6 @@ def build_portfolio(oos_df: pd.DataFrame, method='score_weight', score_column='P
                 selected_mask = selected_mask | sorted_group['Ticker'].isin(top_unheld['Ticker'])
                 
             selected = sorted_group[selected_mask].copy()
-            # If rounding issues leave us with more/less than top_k, trim or take top_k
             if len(selected) > top_k:
                 selected = selected.head(top_k)
                 
@@ -34,7 +31,11 @@ def build_portfolio(oos_df: pd.DataFrame, method='score_weight', score_column='P
         if len(selected) == 0:
             continue
             
-        if method == 'score_weight':
+        if method == 'inverse_vol':
+            # Inverse volatility weighting to minimize portfolio variance
+            inv_vol = 1.0 / selected['VOL_20D'].clip(lower=0.01)
+            selected['Weight'] = inv_vol / inv_vol.sum()
+        elif method == 'score_weight':
             scores = selected[score_column].clip(lower=0.0)
             if scores.sum() > 0:
                 selected['Weight'] = scores / scores.sum()
