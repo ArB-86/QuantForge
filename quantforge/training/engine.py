@@ -7,12 +7,20 @@ class WalkForwardEngine:
         self.splitter = splitter
 
     def run(self, df: pd.DataFrame, feature_columns: list, target: str):
-        # Guarantee clean 0..N-1 RangeIndex and make Date/Ticker regular columns
-        df = df.reset_index(drop=False)
-        for col in ['index', 'level_0']:
+        # Robustly flatten any index levels (MultiIndex or single Index) into columns
+        if isinstance(df.index, pd.MultiIndex) or df.index.name is not None or any(col in ['Ticker', 'Date'] for col in df.index.names if col):
+            df = df.reset_index()
+            
+        # Clean up any leftover index artifacts
+        for col in ['index', 'level_0', 'level_1']:
             if col in df.columns:
                 df = df.drop(columns=[col])
                 
+        df.columns = [str(c).strip() for c in df.columns]
+        
+        if 'Ticker' not in df.columns or 'Date' not in df.columns:
+            raise KeyError(f"Fatal: 'Ticker' or 'Date' missing from DataFrame columns. Available columns: {list(df.columns)}")
+
         splits = self.splitter.split(df)
         oos_preds = []
         
