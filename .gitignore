@@ -73,3 +73,16 @@ results/
 output/
 *.db
 data/*.parquet
+
+# ==========================
+# ML Training Artifacts
+# ==========================
+
+catboost_info/
+lightgbm_info/
+mlruns/
+wandb/
+tensorboard/
+runs/
+events.out.tfevents*
+
