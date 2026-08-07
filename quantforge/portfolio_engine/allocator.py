@@ -1,85 +1,33 @@
-import inspect
+import pandas as pd
 
-from quantforge.portfolio_engine.equal_weight import (
-    build_equal_weight_portfolio,
-)
-
-from quantforge.portfolio_engine.inverse_volatility import (
-    build_inverse_volatility_portfolio,
-)
-
-from quantforge.portfolio_engine.score_weight import (
-    build_score_weight_portfolio,
-)
-
-from quantforge.portfolio_engine.risk_parity import (
-    build_risk_parity_portfolio,
-)
-
-from quantforge.portfolio_engine.constraints import (
-    PortfolioConstraints,
-)
-from quantforge.diagnostics.exposure import ExposureManager
-
-ALLOCATORS = {
-
-    "equal_weight":
-        build_equal_weight_portfolio,
-
-    "inverse_volatility":
-        build_inverse_volatility_portfolio,
-
-    "score_weight":
-        build_score_weight_portfolio,
-
-    "risk_parity":
-        build_risk_parity_portfolio,
-
-}
-
-
-def build_portfolio(
-    df,
-    method="equal_weight",
-    **kwargs,
-):
-
-    # Remove max_stock_weight from kwargs before passing to allocator
-    max_stock_weight = kwargs.pop(
-        "max_stock_weight",
-        1.0,
-    )
-
-    allocator = ALLOCATORS.get(
-        method.lower()
-    )
-
-    if allocator is None:
-        raise ValueError(
-            f"Unknown portfolio method: {method}"
-        )
-
-    # ---- FILTER ARGUMENTS TO MATCH ALLOCATOR SIGNATURE ----
-    sig = inspect.signature(allocator)
-    filtered_kwargs = {
-        k: v
-        for k, v in kwargs.items()
-        if k in sig.parameters
-    }
-
-    portfolio = allocator(
-        df,
-        **filtered_kwargs,
-    )
-
-    # Apply constraint after portfolio is built
-    portfolio = PortfolioConstraints(
-        max_weight=max_stock_weight,
-    ).apply(portfolio)
-
-    # Apply exposure management (ensure weights sum to 100%)
-    portfolio = ExposureManager().apply(
-        portfolio
-    )
-
-    return portfolio
+def build_portfolio(oos_df: pd.DataFrame, method='score_weight', score_column='Prediction', top_k=10):
+    portfolio_rows = []
+    
+    for date, group in oos_df.groupby('Date'):
+        # Sort by prediction descending
+        sorted_group = group.sort_values(by=score_column, ascending=False)
+        
+        # Select top K stocks to diversify and reduce concentration risk
+        top_stocks = sorted_group.head(top_k).copy()
+        
+        if len(top_stocks) == 0:
+            continue
+            
+        if method == 'score_weight':
+            # Weight proportional to predicted score, bounded and normalized
+            scores = top_stocks[score_column].clip(lower=0.0)
+            if scores.sum() > 0:
+                top_stocks['Weight'] = scores / scores.sum()
+            else:
+                top_stocks['Weight'] = 1.0 / len(top_stocks)
+        else:
+            # Equal weight across top K
+            top_stocks['Weight'] = 1.0 / len(top_stocks)
+            
+        portfolio_rows.append(top_stocks[['Date', 'Ticker', 'TARGET_5D', 'RET_1D', 'VOL_20D', 'Raw_Prediction', 'Prediction', 'Weight']])
+        
+    if not portfolio_rows:
+        return pd.DataFrame()
+        
+    portfolio_df = pd.concat(portfolio_rows, ignore_index=True)
+    return portfolio_df
