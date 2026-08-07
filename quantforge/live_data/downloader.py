@@ -1,56 +1,43 @@
-import time
 import pandas as pd
 import yfinance as yf
-from quantforge.dataset.schema import enforce_schema
+import os
 
-class MarketDataDownloader:
-    def __init__(self, batch_size: int = 50, retries: int = 3):
-        self.batch_size = batch_size
-        self.retries = retries
+class DataDownloader:
+    def __init__(self, tickers_path='data/tickers.csv', output_path='data/raw_market_data.parquet'):
+        self.tickers_path = tickers_path
+        self.output_path = output_path
 
-    def download(self, tickers: list[str], start_date: str, end_date: str = None) -> pd.DataFrame:
-        print(f"Starting download for {len(tickers)} tickers from {start_date}")
-        all_frames = []
+    def download(self, start_date='2020-01-01', end_date=None):
+        if not os.path.exists(self.tickers_path):
+            raise FileNotFoundError(f"Ticker file not found at {self.tickers_path}")
+            
+        tickers_df = pd.read_csv(self.tickers_path)
+        tickers = tickers_df['Ticker'].tolist()
+        print(f"Downloading historical data for {len(tickers)} tickers: {tickers}")
         
-        for i in range(0, len(tickers), self.batch_size):
-            batch = tickers[i:i + self.batch_size]
-            print(f"Processing batch {(i // self.batch_size) + 1} ({len(batch)} symbols)")
-            
-            df = self._download_batch(batch, start_date, end_date)
-            if df is not None and not df.empty:
-                all_frames.append(df)
-                
-            time.sleep(1)
-
-        if not all_frames:
-            raise RuntimeError("No data downloaded.")
-
-        master_df = pd.concat(all_frames, ignore_index=True)
-        master_df = enforce_schema(master_df)
-        return master_df
-
-    def _download_batch(self, batch: list[str], start_date: str, end_date: str) -> pd.DataFrame:
-        for attempt in range(self.retries):
+        all_data = []
+        for ticker in tickers:
             try:
-                df = yf.download(
-                    tickers=batch, start=start_date, end=end_date,
-                    auto_adjust=False, group_by="ticker", progress=False
-                )
-                if not df.empty:
-                    return self._reshape(df, batch)
+                df = yf.download(ticker, start=start_date, end=end_date, progress=False)
+                if df.empty:
+                    print(f"WARNING: No data returned for {ticker}")
+                    continue
+                # Handle multi-index columns if returned by yfinance
+                if isinstance(df.columns, pd.MultiIndex):
+                    df.columns = df.columns.droplevel(1)
+                df = df.reset_index()
+                df['Ticker'] = ticker
+                all_data.append(df)
             except Exception as e:
-                print(f"Attempt {attempt + 1} failed: {e}")
-                time.sleep(2)
-        return None
-
-    def _reshape(self, df: pd.DataFrame, batch: list[str]) -> pd.DataFrame:
-        if isinstance(df.columns, pd.MultiIndex):
-            df = df.stack(level=0, future_stack=True).reset_index()
-            df = df.rename(columns={"level_1": "Ticker", "ticker": "Ticker"})
-        else:
-            df = df.reset_index()
-            df['Ticker'] = batch[0]
+                print(f"ERROR downloading {ticker}: {e}")
+                
+        if not all_data:
+            raise RuntimeError("Failed to download data for any tickers.")
             
-        df = df.rename(columns={"Adj Close": "Adj_Close", "Datetime": "Date"})
-        df = df.dropna(subset=["Close"]).copy()
-        return df
+        master_df = pd.concat(all_data, ignore_index=True)
+        os.makedirs(os.path.dirname(self.output_path), exist_ok=True)
+        master_df.to_parquet(self.output_path, index=False)
+        print(f"Successfully saved raw data for {len(all_data)} tickers to {self.output_path}")
+
+if __name__ == '__main__':
+    DataDownloader().download()

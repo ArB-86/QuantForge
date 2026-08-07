@@ -1,28 +1,15 @@
-import duckdb
 import pandas as pd
-from pathlib import Path
-from typing import List, Optional
+import os
 
 class DataLoader:
-    def __init__(self, db_path: str = "data/market_data.db"):
-        self.db_path = Path(db_path)
-        if not self.db_path.exists():
-            raise FileNotFoundError(f"Database not found at {self.db_path}. Run update_dataset first.")
+    def __init__(self, file_path='data/raw_market_data.parquet'):
+        self.file_path = file_path
 
-    def load(self, start_date: Optional[str] = None, end_date: Optional[str] = None, tickers: Optional[List[str]] = None) -> pd.DataFrame:
-        query = "SELECT * FROM ohlcv WHERE 1=1"
-        
-        if start_date:
-            query += f" AND Date >= '{start_date}'"
-        if end_date:
-            query += f" AND Date <= '{end_date}'"
-        if tickers:
-            tickers_str = ", ".join([f"'{t}'" for t in tickers])
-            query += f" AND Ticker IN ({tickers_str})"
-            
-        query += " ORDER BY Date, Ticker"
-        
-        with duckdb.connect(str(self.db_path), read_only=True) as conn:
-            df = conn.execute(query).df()
-            
+    def load(self) -> pd.DataFrame:
+        if not os.path.exists(self.file_path):
+            raise FileNotFoundError(f"Raw data file not found at {self.file_path}. Run downloader first.")
+        df = pd.read_parquet(self.file_path)
+        # Ensure standard column names
+        rename_map = {'Open': 'Open', 'High': 'High', 'Low': 'Low', 'Close': 'Close', 'Adj Close': 'Adj_Close', 'Volume': 'Volume', 'Date': 'Date'}
+        df = df.rename(columns={k: v for k, v in rename_map.items() if k in df.columns})
         return df
