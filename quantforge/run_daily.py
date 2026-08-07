@@ -45,13 +45,18 @@ def main():
         rebalance_freq=5
     )
     
-    # Filter strictly for the latest available rebalance date to prevent historical order duplication
+    # Filter strictly for the latest available rebalance date
     if 'Date' in portfolio.columns:
         latest_date = portfolio['Date'].max()
         portfolio = portfolio[portfolio['Date'] == latest_date]
         print(f'Isolating execution portfolio for latest date: {latest_date}')
 
-    # [5/6] Generate execution orders for today only
+    # Merge latest actual Close prices from df_feat to ensure realistic order sizing
+    if 'Close' in df_feat.columns and 'Date' in df_feat.columns:
+        latest_prices = df_feat[df_feat['Date'] == latest_date][['Ticker', 'Close']].drop_duplicates()
+        portfolio = portfolio.merge(latest_prices, on='Ticker', how='left')
+
+    # [5/6] Generate execution orders with true prices
     executor = OrderExecutor(portfolio_value=1000000.0)
     orders = executor.generate_orders(portfolio)
     
