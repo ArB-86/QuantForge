@@ -35,7 +35,7 @@ def main():
         print('Warning: Out-of-sample predictions dataframe is empty.')
         return
         
-    # [4/6] Compute target portfolio weights
+    # [4/6] Compute target portfolio weights across time
     portfolio = build_portfolio(
         oos, 
         method='inverse_vol', 
@@ -45,7 +45,13 @@ def main():
         rebalance_freq=5
     )
     
-    # [5/6] Generate execution orders
+    # Filter strictly for the latest available rebalance date to prevent historical order duplication
+    if 'Date' in portfolio.columns:
+        latest_date = portfolio['Date'].max()
+        portfolio = portfolio[portfolio['Date'] == latest_date]
+        print(f'Isolating execution portfolio for latest date: {latest_date}')
+
+    # [5/6] Generate execution orders for today only
     executor = OrderExecutor(portfolio_value=1000000.0)
     orders = executor.generate_orders(portfolio)
     
