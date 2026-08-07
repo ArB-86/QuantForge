@@ -8,10 +8,10 @@ from quantforge.modeling.lightgbm import LightGBMModel
 from quantforge.training.engine import WalkForwardEngine
 from quantforge.portfolio_engine.allocator import build_portfolio
 from quantforge.execution.order_generator import OrderGenerator
-from quantforge.execution.broker import PaperBroker
+from quantforge.execution.live_gateway import LiveBrokerGateway
 
 def main():
-    print('=== QUANTFORGE DAILY EXECUTION PIPELINE ===')
+    print('=== QUANTFORGE INSTITUTIONAL DAILY PIPELINE ===')
     
     # Step 1: Download latest market data
     print('[1/6] Downloading latest market data...')
@@ -34,13 +34,18 @@ def main():
     )
     oos = engine.run(df_feat, fe.feature_columns, 'TARGET_5D')
     
-    # Step 4: Build Portfolio Target Weights
+    # Step 4: Build Portfolio Target Weights (Institutional Config: Inverse Vol + Regime Filter + Hysteresis + Weekly Rebalance)
     print('[4/6] Computing target portfolio weights...')
-    portfolio = build_portfolio(oos, method='score_weight', score_column='Prediction')
+    portfolio = build_portfolio(oos, method='inverse_vol', score_column='Prediction', top_k=10, buffer_k=15, rebalance_freq=5)
+    
+    if portfolio.empty:
+        print('[REGIME FILTER] Market sentiment bearish. Going 100% to cash. No orders placed.')
+        return
+        
     latest_date = portfolio['Date'].max()
     latest_weights = portfolio[portfolio['Date'] == latest_date]
     print(f'Target weights for date: {latest_date}')
-    print(latest_weights)
+    print(latest_weights[['Ticker', 'Prediction', 'VOL_20D', 'Weight']])
     
     # Step 5: Generate Broker Orders
     print('[5/6] Generating execution orders...')
@@ -49,10 +54,10 @@ def main():
     orders = generator.generate_orders(latest_weights, latest_prices)
     print(orders)
     
-    # Step 6: Execute via Paper Broker
-    print('[6/6] Executing paper trades...')
-    broker = PaperBroker(initial_cash=1000000.0)
-    broker.execute_orders(orders)
+    # Step 6: Route via Production Broker Gateway
+    print('[6/6] Routing orders through broker gateway...')
+    gateway = LiveBrokerGateway(broker_name='paper')
+    gateway.place_orders(orders)
 
 if __name__ == '__main__':
     main()
