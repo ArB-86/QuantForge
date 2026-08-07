@@ -2,37 +2,37 @@ import pandas as pd
 import numpy as np
 
 class BacktestSimulator:
-    def __init__(self, initial_capital=100000, transaction_cost=0.0015):
-        self.initial_capital = initial_capital
-        self.tc = transaction_cost
+    def __init__(self, transaction_cost_bps=10.0, stt_bps=1.0):
+        # 10 bps execution cost + 1 bp STT on sell side
+        self.transaction_cost_rate = transaction_cost_bps / 10000.0
+        self.stt_rate = stt_bps / 10000.0
 
-    def run(self, portfolio_df: pd.DataFrame, market_data_df: pd.DataFrame) -> pd.DataFrame:
-        weights = portfolio_df.pivot(index='Date', columns='Ticker', values='Weight').fillna(0)
-        returns = market_data_df.pivot(index='Date', columns='Ticker', values='RET_1D').fillna(0)
+    def run(self, portfolio_weights: pd.DataFrame, market_data: pd.DataFrame) -> pd.DataFrame:
+        weights = portfolio_weights.pivot(index='Date', columns='Ticker', values='Weight').fillna(0)
+        rets = market_data.pivot(index='Date', columns='Ticker', values='RET_1D').fillna(0)
         
-        # Align dates
-        common_dates = weights.index.intersection(returns.index)
+        common_dates = weights.index.intersection(rets.index)
         weights = weights.loc[common_dates]
-        returns = returns.loc[common_dates]
+        rets = rets.loc[common_dates]
         
-        # Shift weights to prevent lookahead (weight calculated on T, earns return on T+1)
-        shifted_weights = weights.shift(1).fillna(0)
+        # Calculate portfolio turnover
+        turnover = (weights - weights.shift(1).fillna(0)).abs().sum(axis=1)
         
-        # Calculate gross daily return
-        gross_pnl = (shifted_weights * returns).sum(axis=1)
+        # Gross returns
+        gross_rets = (weights.shift(1).fillna(0) * rets).sum(axis=1)
         
-        # Calculate turnover and transaction costs
-        weight_changes = shifted_weights.diff().fillna(shifted_weights)
-        turnover = weight_changes.abs().sum(axis=1)
-        tc_pnl = turnover * self.tc
+        # Realistic transaction costs applied on turnover
+        costs = turnover * self.transaction_cost_rate
+        net_rets = gross_rets - costs
         
-        # Net daily return
-        net_pnl = gross_pnl - tc_pnl
+        # Equity curve starting at 100,000
+        equity_curve = 100000 * (1 + net_rets).cumprod()
         
         results = pd.DataFrame({
-            'Gross_Return': gross_pnl,
+            'Gross_Return': gross_rets,
             'Turnover': turnover,
-            'Net_Return': net_pnl,
-            'Equity_Curve': (1 + net_pnl).cumprod() * self.initial_capital
-        })
+            'Net_Return': net_rets,
+            'Equity_Curve': equity_curve
+        }, index=common_dates)
+        
         return results
