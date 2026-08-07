@@ -72,3 +72,4 @@ data/cache/
 results/
 output/
 *.db
+data/*.parquet
