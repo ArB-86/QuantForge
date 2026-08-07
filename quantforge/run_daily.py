@@ -8,16 +8,17 @@ from quantforge.modeling.lightgbm import LightGBMModel
 from quantforge.training.engine import WalkForwardEngine
 from quantforge.portfolio_engine.allocator import build_portfolio
 from quantforge.execution.order_generator import OrderGenerator
+from quantforge.execution.broker import PaperBroker
 
 def main():
     print('=== QUANTFORGE DAILY EXECUTION PIPELINE ===')
     
     # Step 1: Download latest market data
-    print('[1/5] Downloading latest market data...')
+    print('[1/6] Downloading latest market data...')
     DataDownloader().download()
     
     # Step 2: Generate features
-    print('[2/5] Building feature store...')
+    print('[2/6] Building feature store...')
     df = DataLoader().load()
     fe = FeatureEngineer()
     df_feat = fe.generate(df)
@@ -25,7 +26,7 @@ def main():
     fs.save(df_feat)
     
     # Step 3: Run Walk-Forward Model Inference
-    print('[3/5] Running model training and inference...')
+    print('[3/6] Running model training and inference...')
     engine = WalkForwardEngine(
         LightGBMModel, 
         {'verbose': -1, 'max_depth': 3, 'num_leaves': 7, 'learning_rate': 0.05, 'n_estimators': 50, 'colsample_bytree': 0.5, 'subsample': 0.8}, 
@@ -34,21 +35,24 @@ def main():
     oos = engine.run(df_feat, fe.feature_columns, 'TARGET_5D')
     
     # Step 4: Build Portfolio Target Weights
-    print('[4/5] Computing target portfolio weights...')
+    print('[4/6] Computing target portfolio weights...')
     portfolio = build_portfolio(oos, method='score_weight', score_column='Prediction')
     latest_date = portfolio['Date'].max()
     latest_weights = portfolio[portfolio['Date'] == latest_date]
     print(f'Target weights for date: {latest_date}')
     print(latest_weights)
     
-    # Step 5: Generate Broker Orders (Mock live prices for testing)
-    print('[5/5] Generating execution orders...')
+    # Step 5: Generate Broker Orders
+    print('[5/6] Generating execution orders...')
     latest_prices = df_feat[df_feat['Date'] == latest_date].set_index('Ticker')['Close'].to_dict()
     generator = OrderGenerator(portfolio_value=1000000)
     orders = generator.generate_orders(latest_weights, latest_prices)
-    
-    print('\n--- FINAL EXECUTION ORDERS ---')
     print(orders)
+    
+    # Step 6: Execute via Paper Broker
+    print('[6/6] Executing paper trades...')
+    broker = PaperBroker(initial_cash=1000000.0)
+    broker.execute_orders(orders)
 
 if __name__ == '__main__':
     main()
