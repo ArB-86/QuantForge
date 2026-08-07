@@ -7,20 +7,22 @@ class WalkForwardEngine:
         self.splitter = splitter
 
     def run(self, df: pd.DataFrame, feature_columns: list, target: str):
-        # Ensure Ticker and Date are present as columns for robust .loc selection
-        if 'Ticker' not in df.columns or 'Date' not in df.columns:
-            df = df.reset_index()
-            
+        # Guarantee clean 0..N-1 RangeIndex and make Date/Ticker regular columns
+        df = df.reset_index(drop=False)
+        for col in ['index', 'level_0']:
+            if col in df.columns:
+                df = df.drop(columns=[col])
+                
         splits = self.splitter.split(df)
         oos_preds = []
         
         for train_idx, test_idx in splits:
-            train_df = df.loc[train_idx]
-            test_df = df.loc[test_idx, ['Date', 'Ticker', target, 'RET_1D']].copy()
+            train_df = df.iloc[train_idx]
+            test_df = df.iloc[test_idx][['Date', 'Ticker', target, 'RET_1D']].copy()
             
             X_train = train_df[feature_columns]
             y_train = train_df[target]
-            X_test = df.loc[test_idx, feature_columns]
+            X_test = df.iloc[test_idx][feature_columns]
             
             model = self.model_class(**self.model_params)
             model.fit(X_train, y_train)
