@@ -21,6 +21,7 @@ def _worker(gpu_id: int, chunk: list, out_dir: str):
     feature_matrix = _G_FEAT
     target_vector  = _G_TARG
     df_for_test    = _G_DF
+    print(f"Shapes: {feature_matrix.shape} {target_vector.shape} {df_for_test.shape}")
 
     # Temporary directory for models (one per fold)
     tmp_model_dir = Path(out_dir) / "tmp_models"
@@ -180,33 +181,16 @@ class MonthlyLoop:
                 self.dashboard.record("folds_processed", 0)
             return self.checkpoint_manager
 
-        num_gpus = min(self.workers, mp.cpu_count())
-        chunks = [[] for _ in range(num_gpus)]
-        for idx, task in enumerate(tasks):
-            gpu_id = idx % num_gpus
-            chunks[gpu_id].append(task)
+        print("Windows compatibility: running walkforward sequentially")
 
-        print(f"Distributing {n_folds} folds over {num_gpus} GPUs")
-
-        # Set globals for workers
         global _G_FEAT, _G_TARG, _G_DF
         _G_FEAT = self.feature_matrix
         _G_TARG = self.target_vector
-        _G_DF   = self.df_for_test
+        _G_DF = self.df_for_test
 
         out_dir = str(self.prediction_file.parent)
 
-        procs = []
-        for gpu_id, chunk in enumerate(chunks):
-            if not chunk:
-                continue
-            p = mp.Process(target=_worker, args=(gpu_id, chunk, out_dir))
-            p.start()
-            procs.append(p)
-
-        for p in procs:
-            p.join()
-
+        _worker(0, tasks, out_dir)
         train_time = time.perf_counter() - overall - fold_gen_time
         print(f"Training (parallel) : {train_time:.2f}s")
 

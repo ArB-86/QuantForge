@@ -30,5 +30,5 @@
     "num_threads": 4,
     "features": "v4",
     "benchmark_file": "data/training/master_v9.parquet",
-    "benchmark_return_column": "RETURN_1D"
+    "benchmark_return_column": "Return"
 }

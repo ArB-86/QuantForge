@@ -135,7 +135,13 @@ class ExperimentRunner:
         benchmark = load_benchmark(self.config)
 
         if benchmark is not None:
-            benchmark_stats = compute_benchmark_metrics(portfolio, benchmark)
+            benchmark_stats = compute_benchmark_metrics(
+            portfolio,
+            benchmark,
+            config=self.config,
+            strategy_cagr=metrics.get("CAGR"),
+            holding_days=self.config.get("holding_days", 20),
+        )
             metrics.update(benchmark_stats)
             artifact_mgr.save_benchmark(benchmark, benchmark_stats)
 

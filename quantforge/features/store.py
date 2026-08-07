@@ -1,3 +1,4 @@
+from quantforge.features.base import add_base_features
 from pathlib import Path
 import pandas as pd
 
@@ -14,6 +15,8 @@ CACHE_PATH = Path("data/cache/features_v1.parquet")
 class FeatureStore:
 
     def build(self, df):
+        print("Adding base features...")
+        df = add_base_features(df)
         print("Adding momentum features...")
         df = add_momentum_features(df)
         print("Adding volatility features...")
@@ -27,10 +30,9 @@ class FeatureStore:
         print("Adding liquidity features...")
         df = add_liquidity_features(df)
 
-        # Bulk float32 conversion
-        float_cols = df.select_dtypes(include=['float64']).columns
+        float_cols = df.select_dtypes(include=["float64"]).columns
         if len(float_cols):
-            df[float_cols] = df[float_cols].astype('float32')
+            df[float_cols] = df[float_cols].astype("float32")
         print("Feature engineering complete.")
         return df
 
