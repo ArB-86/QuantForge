@@ -25,7 +25,7 @@ class OrderExecutor:
                 
             target_shares = int(capital_allocated // price)
             if target_shares <= 0:
-                target_shares = 1  .
+                target_shares = 1
                 
             orders.append({
                 'Ticker': ticker,
