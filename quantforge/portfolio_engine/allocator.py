@@ -1,33 +1,51 @@
 import pandas as pd
 
-def build_portfolio(oos_df: pd.DataFrame, method='score_weight', score_column='Prediction', top_k=10):
+def build_portfolio(oos_df: pd.DataFrame, method='score_weight', score_column='Prediction', top_k=10, buffer_k=15):
     portfolio_rows = []
+    previous_holdings = set()
     
     for date, group in oos_df.groupby('Date'):
-        # Sort by prediction descending
-        sorted_group = group.sort_values(by=score_column, ascending=False)
+        sorted_group = group.sort_values(by=score_column, ascending=False).reset_index(drop=True)
+        sorted_group['Rank'] = sorted_group.index + 1
         
-        # Select top K stocks to diversify and reduce concentration risk
-        top_stocks = sorted_group.head(top_k).copy()
+        if not previous_holdings:
+            # Initial selection: Top K
+            selected = sorted_group[sorted_group['Rank'] <= top_k].copy()
+        else:
+            # Hysteresis buffer: Keep existing holdings if they are within buffer_k, otherwise pick top_k
+            is_held = sorted_group['Ticker'].isin(previous_holdings)
+            is_qualified = sorted_group['Rank'] <= buffer_k
+            selected_mask = is_held & is_qualified
+            
+            # Fill remaining slots up to top_k with top unheld stocks
+            num_needed = top_k - selected_mask.sum()
+            if num_needed > 0:
+                unheld_mask = ~selected_mask
+                top_unheld = sorted_group[unheld_mask].head(num_needed)
+                selected_mask = selected_mask | sorted_group['Ticker'].isin(top_unheld['Ticker'])
+                
+            selected = sorted_group[selected_mask].copy()
+            # If rounding issues leave us with more/less than top_k, trim or take top_k
+            if len(selected) > top_k:
+                selected = selected.head(top_k)
+                
+        previous_holdings = set(selected['Ticker'])
         
-        if len(top_stocks) == 0:
+        if len(selected) == 0:
             continue
             
         if method == 'score_weight':
-            # Weight proportional to predicted score, bounded and normalized
-            scores = top_stocks[score_column].clip(lower=0.0)
+            scores = selected[score_column].clip(lower=0.0)
             if scores.sum() > 0:
-                top_stocks['Weight'] = scores / scores.sum()
+                selected['Weight'] = scores / scores.sum()
             else:
-                top_stocks['Weight'] = 1.0 / len(top_stocks)
+                selected['Weight'] = 1.0 / len(selected)
         else:
-            # Equal weight across top K
-            top_stocks['Weight'] = 1.0 / len(top_stocks)
+            selected['Weight'] = 1.0 / len(selected)
             
-        portfolio_rows.append(top_stocks[['Date', 'Ticker', 'TARGET_5D', 'RET_1D', 'VOL_20D', 'Raw_Prediction', 'Prediction', 'Weight']])
+        portfolio_rows.append(selected[['Date', 'Ticker', 'TARGET_5D', 'RET_1D', 'VOL_20D', 'Raw_Prediction', 'Prediction', 'Weight']])
         
     if not portfolio_rows:
         return pd.DataFrame()
         
-    portfolio_df = pd.concat(portfolio_rows, ignore_index=True)
-    return portfolio_df
+    return pd.concat(portfolio_rows, ignore_index=True)
