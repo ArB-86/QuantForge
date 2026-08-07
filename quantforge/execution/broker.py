@@ -7,13 +7,17 @@ class PaperBroker:
 
     def execute_orders(self, orders_df: pd.DataFrame):
         print('\n--- EXECUTING PAPERTRAINING ORDERS ---')
+        total_spent = 0.0
         for _, row in orders_df.iterrows():
             ticker = row['Ticker']
             shares = row['Target_Shares']
             price = row['Execution_Price']
             cost = shares * price
+            total_spent += cost
             
             self.positions[ticker] = shares
             print(f'Executed: BUY {shares} shares of {ticker} at {price:.2f} | Cost: {cost:.2f}')
+            
+        self.cash -= total_spent
         print(f'Paper Broker Cash Remaining: {self.cash:,.2f}')
         return True
