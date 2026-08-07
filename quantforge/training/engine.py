@@ -7,11 +7,9 @@ class WalkForwardEngine:
         self.splitter = splitter
 
     def run(self, df: pd.DataFrame, feature_columns: list, target: str):
-        # Robustly flatten any index levels (MultiIndex or single Index) into columns
         if isinstance(df.index, pd.MultiIndex) or df.index.name is not None or any(col in ['Ticker', 'Date'] for col in df.index.names if col):
             df = df.reset_index()
             
-        # Clean up any leftover index artifacts
         for col in ['index', 'level_0', 'level_1']:
             if col in df.columns:
                 df = df.drop(columns=[col])
@@ -26,7 +24,11 @@ class WalkForwardEngine:
         
         for train_idx, test_idx in splits:
             train_df = df.iloc[train_idx]
-            test_df = df.iloc[test_idx][['Date', 'Ticker', target, 'RET_1D']].copy()
+            cols_to_keep = ['Date', 'Ticker', target, 'RET_1D']
+            if 'VOL_20D' in df.columns and 'VOL_20D' not in cols_to_keep:
+                cols_to_keep.append('VOL_20D')
+                
+            test_df = df.iloc[test_idx][cols_to_keep].copy()
             
             X_train = train_df[feature_columns]
             y_train = train_df[target]
