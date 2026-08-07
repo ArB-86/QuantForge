@@ -43,7 +43,7 @@ class FeatureEngineer:
             g['TARGET_5D'] = g['Close'].shift(-5) / g['Close'] - 1
             return g
 
-        df = df.groupby('Ticker', group_keys=False).apply(apply_indicators)
+        df = df.groupby('Ticker', group_keys=False).apply(apply_indicators, include_groups=False)
         
         base_cols = ['Date', 'Ticker', 'Open', 'High', 'Low', 'Close', 'Adj_Close', 'Volume', 'TARGET_1D', 'TARGET_5D']
         self.feature_columns = [c for c in df.columns if c not in base_cols]
@@ -53,3 +53,4 @@ class FeatureEngineer:
             df[col] = df[col].astype(np.float32)
             
         return df
+
